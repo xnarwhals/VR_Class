@@ -1,0 +1,11 @@
+{
+    "asset": "b0a9ea67e78a04c46b63e2016e79d0e3",
+    "fileName": "019b9a39-4056-7882-a996-ad593642f55d_Preview.png",
+    "prompt": "base material to texture my preset apartment model, low poly retro ",
+    "negativePrompt": "",
+    "model": "44ec3749-963a-44b1-aa54-dc19f6ed8ab2",
+    "modelName": "Unity Texture2D",
+    "customSeed": 638509758,
+    "w3CTraceId": "2fd1290743daa0acfd417c3ebb5af4a5",
+    "refinementMode": "Generation"
+}
