@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 1418807673980590253}
   - component: {fileID: 1322163589803049283}
   - component: {fileID: 3926351143483647645}
+  - component: {fileID: 989124454087379194}
   m_Layer: 0
   m_Name: Apple
   m_TagString: Untagged
@@ -272,3 +273,16 @@ MonoBehaviour:
   m_LimitAngularVelocity: 0
   m_MaxLinearVelocityDelta: 10
   m_MaxAngularVelocityDelta: 20
+--- !u!114 &989124454087379194
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 393236962671987404}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8426b8b7e6b634c6b979b569ae581433, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AppleID
+  color: 0

@@ -5,9 +5,14 @@ public class AudioManager : MonoBehaviour
     public static AudioManager Instance { get; private set; }
 
     [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioSource loopSource;
     
     [Header("Audio Clips")]
     [SerializeField] private AudioClip victoryJingle;
+    [SerializeField] private AudioClip eatApple;
+    [SerializeField] private AudioClip phoneRingLoop;
+    [SerializeField] private AudioClip phonePickup;
+
 
     private void Awake()
     {
@@ -25,6 +30,12 @@ public class AudioManager : MonoBehaviour
 
         if (audioSource == null)
             audioSource = gameObject.AddComponent<AudioSource>();
+
+        if (loopSource == null)
+        {
+            loopSource = gameObject.AddComponent<AudioSource>();
+            loopSource.loop = true;
+        }
     }
 
     public void PlayOneShot(AudioClip clip)
@@ -35,9 +46,36 @@ public class AudioManager : MonoBehaviour
         audioSource.PlayOneShot(clip);
     }
 
-    public void PlayVictoryJingle()
+    public void PlayVictoryJingle() { PlayOneShot(victoryJingle); }
+    public void PlayEatApple() { PlayOneShot(eatApple); }
+
+    // when all puzzles are complete
+    public void StartPhoneRing()
     {
-        if (victoryJingle != null)
-            PlayOneShot(victoryJingle);
+        if (phoneRingLoop == null || loopSource == null)
+            return;
+
+        if (loopSource.isPlaying && loopSource.clip == phoneRingLoop)
+            return;
+
+        loopSource.clip = phoneRingLoop;
+        loopSource.Play();
+    }
+
+    // called when phone is picked up
+    public void StopPhoneRing()
+    {
+        if (loopSource == null)
+            return;
+
+        if (loopSource.isPlaying)
+            loopSource.Stop();
+    }
+
+    // also called when phone is picked up
+    public void PlayPhonePickup()
+    {
+        if (phonePickup != null)
+            PlayOneShot(phonePickup);
     }
 }
