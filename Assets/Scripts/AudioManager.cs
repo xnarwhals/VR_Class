@@ -12,6 +12,7 @@ public class AudioManager : MonoBehaviour
     [SerializeField] private AudioClip eatApple;
     [SerializeField] private AudioClip phoneRingLoop;
     [SerializeField] private AudioClip phonePickup;
+    [SerializeField] private AudioClip catMeow;
 
 
     private void Awake()
@@ -77,5 +78,11 @@ public class AudioManager : MonoBehaviour
     {
         if (phonePickup != null)
             PlayOneShot(phonePickup);
+    }
+
+    public void PlayCatMeow()
+    {
+        if (catMeow != null)
+            PlayOneShot(catMeow);
     }
 }

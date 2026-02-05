@@ -36,16 +36,26 @@ public class CatRoam : MonoBehaviour
     [Range(0f, 1f)] public float sprintChance = 0.08f;
     public float sprintMultiplier = 1.8f;
 
+    [Header("Model Alignment")]
+    public Transform modelRoot;
+    public float modelVerticalOffset = 0.0f;
+    public bool faceMovement = true;
+    public float turnSpeedDegrees = 360f;
+    public float modelYawOffset = 0.0f;
+
     private CatState state = CatState.Idle;
     private Queue<int> recentPointIndices = new();
     private float stateTimer;
+    private bool isPaused;
+    private float pauseEndTime;
 
     // stuck detection
     private float stuckTimer;
     private Vector3 lastPos;
     private float lastStuckCheckTime;
+    private Vector3 modelLocalBasePos;
 
-    [Serializable]
+    [System.Serializable]
     public class RoamPoint
     {
         public Transform transform;
@@ -62,6 +72,8 @@ public class CatRoam : MonoBehaviour
         if (!agent) agent = GetComponent<NavMeshAgent>();
         lastPos = transform.position;
         agent.autoBraking = true;
+        if (modelRoot != null)
+            modelLocalBasePos = modelRoot.localPosition;
     }
 
     void Start()
@@ -71,6 +83,22 @@ public class CatRoam : MonoBehaviour
 
     void Update()
     {
+        if (isPaused)
+        {
+            if (Time.time >= pauseEndTime)
+            {
+                isPaused = false;
+                EnterIdle();
+            }
+            else
+            {
+                if (agent && agent.enabled)
+                    agent.ResetPath();
+            }
+
+            return;
+        }
+
         stateTimer -= Time.deltaTime;
 
         switch (state)
@@ -91,6 +119,11 @@ public class CatRoam : MonoBehaviour
                 if (stateTimer <= 0f) EnterRoam();
                 break;
         }
+    }
+
+    void LateUpdate()
+    {
+        UpdateModelAlignment();
     }
 
     void EnterIdle()
@@ -261,6 +294,23 @@ public class CatRoam : MonoBehaviour
         }
     }
 
+    void UpdateModelAlignment()
+    {
+        if (modelRoot == null) return;
+
+        if (!Mathf.Approximately(modelVerticalOffset, 0f))
+            modelRoot.localPosition = modelLocalBasePos + Vector3.up * modelVerticalOffset;
+
+        if (!faceMovement || agent == null) return;
+
+        Vector3 v = agent.velocity;
+        v.y = 0f;
+        if (v.sqrMagnitude < 0.0025f) return;
+
+        Quaternion target = Quaternion.LookRotation(v, Vector3.up) * Quaternion.Euler(0f, modelYawOffset, 0f);
+        modelRoot.rotation = Quaternion.RotateTowards(modelRoot.rotation, target, turnSpeedDegrees * Time.deltaTime);
+    }
+
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.cyan;
@@ -275,6 +325,18 @@ public class CatRoam : MonoBehaviour
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(agent.destination, 0.12f);
         }
+    }
+
+    public void PauseRoam(float duration)
+    {
+        if (duration <= 0f)
+            return;
+
+        isPaused = true;
+        pauseEndTime = Time.time + duration;
+
+        if (agent && agent.enabled)
+            agent.ResetPath();
     }
 
 }
