@@ -5,11 +5,11 @@ using UnityEngine.XR.Interaction.Toolkit.Interactors;
 public class Quiver : MonoBehaviour
 {
     [SerializeField] GameObject arrowPrefab;
-    [SerializeField] private float cooldownBeforeNextArrow = 3f;
+    [SerializeField] private float cooldownBeforeNextArrow = 10f;
 
-    GameObject currentArrow;
     float lastSpawnTime = -999f;
-    XRDirectInteractor currentInteractor;
+    private XRDirectInteractor cachedLeftInteractor;
+    private XRDirectInteractor cachedRightInteractor;
 
     private void Awake()
     {
@@ -17,71 +17,54 @@ public class Quiver : MonoBehaviour
         {
             Debug.LogError("Arrow Prefab is not assigned in the Quiver script.");
         }
+
+
+        CacheDirectInteractors();
     }
 
-    private void OnTriggerEnter(Collider other)
+    private void OnTriggerStay(Collider other)
     {
-        XRDirectInteractor interactor = other.GetComponentInParent<XRDirectInteractor>();
+        
+        XRDirectInteractor interactor = GetCachedInteractor(other);
         if (interactor == null)
         {
+            Debug.Log($"Quiver: GetCachedInteractor returned null for {other.name}");
             return;
         }
 
-        currentInteractor = interactor;
         TrySpawnAndGrab(interactor);
-    }
-
-    private void OnTriggerExit(Collider other)
-    {
-        XRDirectInteractor interactor = other.GetComponentInParent<XRDirectInteractor>();
-        if (interactor == null)
-        {
-            return;
-        }
-
-        if (currentInteractor == interactor)
-        {
-            currentInteractor = null;
-        }
-    }
-
-    private void Update()
-    {
-        if (currentInteractor == null)
-        {
-            return;
-        }
-
-        TrySpawnAndGrab(currentInteractor);
     }
 
     private void TrySpawnAndGrab(XRDirectInteractor interactor)
     {
+        // dont spawn if already holding an arrow
+        if (interactor.hasSelection)
+        {
+            return;
+        }
+
+
         if (!IsSelectPressed(interactor))
         {
+            Debug.Log($"Quiver: Select not pressed - aborting");
             return;
         }
 
         if (Time.time - lastSpawnTime < cooldownBeforeNextArrow)
         {
+            Debug.Log($"Quiver: cooldown active ({Time.time - lastSpawnTime:0.00}s/{cooldownBeforeNextArrow:0.00}s).", this);
             return;
         }
 
         Transform attach = interactor.attachTransform != null ? interactor.attachTransform : interactor.transform;
 
-        if (currentArrow == null)
+        GameObject spawnedArrow = Instantiate(arrowPrefab, attach.position, attach.rotation, null);
+        lastSpawnTime = Time.time;
+
+        XRGrabInteractable grab = spawnedArrow.GetComponent<XRGrabInteractable>();
+        if (grab != null && interactor.interactionManager != null)
         {
-            currentArrow = Instantiate(arrowPrefab, attach.position, attach.rotation, null);
-            lastSpawnTime = Time.time;
-            XRGrabInteractable grab = currentArrow.GetComponent<XRGrabInteractable>();
-            if (grab != null && interactor.interactionManager != null)
-            {
-                interactor.interactionManager.SelectEnter((IXRSelectInteractor)interactor, (IXRSelectInteractable)grab);
-            }
-            else if (grab == null)
-            {
-                Debug.LogWarning("Spawned arrow is missing XRGrabInteractable.", currentArrow);
-            }
+            interactor.interactionManager.SelectEnter((IXRSelectInteractor)interactor, (IXRSelectInteractable)grab);
         }
     }
 
@@ -93,6 +76,47 @@ public class Quiver : MonoBehaviour
         }
 
         var selectInput = interactor.selectInput;
-        return selectInput.ReadWasPerformedThisFrame() || selectInput.ReadIsPerformed();
+        bool wasPerformed = selectInput.ReadWasPerformedThisFrame();
+        bool isPerformed = selectInput.ReadIsPerformed();
+        return wasPerformed || isPerformed;
     }
+
+    private void CacheDirectInteractors()
+    {
+        XRDirectInteractor[] interactors = FindObjectsOfType<XRDirectInteractor>();
+        foreach (XRDirectInteractor interactor in interactors)
+        {
+            if (interactor.CompareTag("LeftHand") || interactor.name.Contains("Left"))
+            {
+                cachedLeftInteractor = interactor;
+            }
+            else if (interactor.CompareTag("RightHand") || interactor.name.Contains("Right"))
+            {
+                cachedRightInteractor = interactor;
+            }
+        }
+    }
+    private XRDirectInteractor GetCachedInteractor(Collider other)
+    {
+        // Check if the collider belongs to a cached interactor
+        if (cachedLeftInteractor != null && IsColliderPartOfInteractor(other, cachedLeftInteractor))
+        {
+            return cachedLeftInteractor;
+        }
+
+        if (cachedRightInteractor != null && IsColliderPartOfInteractor(other, cachedRightInteractor))
+        {
+            return cachedRightInteractor;
+        }
+
+        return null;
+    }
+
+    private bool IsColliderPartOfInteractor(Collider collider, XRDirectInteractor interactor)
+    {
+        // Check if collider is on the interactor or its children
+        return collider.GetComponentInParent<XRDirectInteractor>() == interactor ||
+               interactor.GetComponentInChildren<Collider>() == collider;
+    }
+
 }
