@@ -11,8 +11,14 @@ public class Arrow : MonoBehaviour
     private bool _inAir = false;
     private Vector3 _lastPosition = Vector3.zero;
 
+    private ParticleSystem _particleSystem;
+    private TrailRenderer _trailRenderer;
+
     private void Awake() {
         _rigidbody = GetComponent<Rigidbody>();
+        _particleSystem = GetComponentInChildren<ParticleSystem>();
+        _trailRenderer = GetComponentInChildren<TrailRenderer>();
+
         PullInteraction.pullActionReleased += Release;
         Stop();
     }   
@@ -32,6 +38,9 @@ public class Arrow : MonoBehaviour
 
         StartCoroutine(RotateWithVelocity());
         _lastPosition = tip.position;
+
+        _particleSystem.Play();
+        _trailRenderer.emitting = true;
     }
 
     IEnumerator RotateWithVelocity() {
@@ -66,6 +75,9 @@ public class Arrow : MonoBehaviour
     private void Stop() {
         _inAir = false;
         SetPhysics(false);
+
+        _particleSystem.Stop();
+        _trailRenderer.emitting = false;
     }
 
     private void SetPhysics(bool enabled) {
