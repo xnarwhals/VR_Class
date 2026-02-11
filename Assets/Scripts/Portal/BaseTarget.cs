@@ -16,6 +16,15 @@ public class BaseTarget : MonoBehaviour
     public UnityEvent onFirstHit;
     public UnityEvent onReset;
 
+    // cache audio manager
+    private MetarrowAudioManager _audioManager;
+
+    private void Awake()
+    {
+        _audioManager = MetarrowAudioManager.Instance;
+    }
+
+
     private bool _hasBeenHit = false;
 
     public void HandleArrowHit(Arrow arrow, RaycastHit hit)
@@ -28,7 +37,9 @@ public class BaseTarget : MonoBehaviour
         _hasBeenHit = true;
 
         OnArrowHit(arrow, hit);
-        onHit?.Invoke(arrow);
+        onHit?.Invoke(arrow);      
+        _audioManager?.PlaySound(arrow.HitSound);
+          
         if (firstHit) {
             onFirstHit?.Invoke();
         }
@@ -46,5 +57,7 @@ public class BaseTarget : MonoBehaviour
     }
 
     // Override this in derived targets for custom logic.
-    protected virtual void OnArrowHit(Arrow arrow, RaycastHit hit) { }
+    protected virtual void OnArrowHit(Arrow arrow, RaycastHit hit) {
+        Debug.Log($"{gameObject.name} was hit by an arrow at {hit.point}");
+    }
 }

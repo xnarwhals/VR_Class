@@ -6,6 +6,8 @@ public class Arrow : MonoBehaviour
     public float speed = 6f;
     [SerializeField] private float lifeTime = 10f;
     public Transform tip;
+    [SerializeField] private AudioClip hitSound;
+    public AudioClip HitSound => hitSound;
 
     private Rigidbody _rigidbody;
     private bool _inAir = false;
@@ -13,6 +15,8 @@ public class Arrow : MonoBehaviour
 
     private ParticleSystem _particleSystem;
     private TrailRenderer _trailRenderer;
+
+    
 
     private void Awake()
     {
@@ -102,6 +106,7 @@ public class Arrow : MonoBehaviour
 
         _particleSystem.Stop();
         _trailRenderer.emitting = false;
+        Destroy(gameObject, lifeTime); // heap costly maybe idk
     }
 
     private void SetPhysics(bool enabled)

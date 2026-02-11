@@ -5146,6 +5146,7 @@ MonoBehaviour:
   speed: 5
   lifeTime: 10
   tip: {fileID: 3737585169818429136}
+  hitSound: {fileID: 8300000, guid: fca46eddfaf794d58a9ffc8066ce3b13, type: 3}
 --- !u!1 &6251383242226380173
 GameObject:
   m_ObjectHideFlags: 0

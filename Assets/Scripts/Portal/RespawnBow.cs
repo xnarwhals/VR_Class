@@ -9,8 +9,7 @@ public class RespawnBow : MonoBehaviour
     [SerializeField] private InputActionProperty respawnAction;
 
     [Header("Spawn")]
-    [SerializeField] private Transform respawnPoint;
-    [SerializeField] private Transform playerHead;
+    [SerializeField] private Transform spawnPoint;
     [SerializeField] private float spawnDistance = 0.6f;
     [SerializeField] private GameObject sceneBow;
     [SerializeField] private float cooldownSeconds = 5f;
@@ -53,45 +52,28 @@ public class RespawnBow : MonoBehaviour
     {
         if (sceneBow == null) return;
 
-        Transform head = GetHeadTransform();
         Vector3 spawnPos;
         Quaternion spawnRot;
 
-        if (respawnPoint != null)
+        if (spawnPoint != null)
         {
-            spawnPos = respawnPoint.position;
-            spawnRot = respawnPoint.rotation;
+            spawnPos = spawnPoint.position;
+            spawnRot = spawnPoint.rotation;
         }
         else
         {
-            Vector3 forward = head != null ? head.forward : transform.forward;
-            Vector3 flatForward = new Vector3(forward.x, 0f, forward.z);
-            if (flatForward.sqrMagnitude < 0.001f) flatForward = transform.forward;
-            flatForward.Normalize();
-            spawnPos = (head != null ? head.position : transform.position) + flatForward * spawnDistance;
-            spawnRot = Quaternion.LookRotation(flatForward, Vector3.up);
+            spawnPos = transform.position + transform.forward * spawnDistance;
+            spawnRot = transform.rotation;
+            Debug.LogWarning("No spawn point set for RespawnBow, defaulting to in front of the player.");
         }
 
-        sceneBow.SetActive(true);
         sceneBow.transform.SetPositionAndRotation(spawnPos, spawnRot);
-
-        if (sceneBow.TryGetComponent(out Rigidbody rb))
-        {
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
-        }
 
         if (smokePoof != null)
         {
+            Debug.Log("Playing smoke poof effect at respawn location.");
             smokePoof.transform.SetPositionAndRotation(spawnPos, spawnRot);
             smokePoof.Play();
         }
-    }
-
-    private Transform GetHeadTransform()
-    {
-        if (playerHead != null) return playerHead;
-        if (Camera.main != null) return Camera.main.transform;
-        return null;
     }
 }
