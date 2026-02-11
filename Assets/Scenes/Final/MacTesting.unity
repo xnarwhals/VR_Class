@@ -138,6 +138,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 2685149599746776342, guid: dc72c8f87333040b78cc7c4febf8ff99, type: 3}
   m_PrefabInstance: {fileID: 703043743}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &139439298 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6130404840106877308, guid: dc72c8f87333040b78cc7c4febf8ff99, type: 3}
+  m_PrefabInstance: {fileID: 703043743}
+  m_PrefabAsset: {fileID: 0}
 --- !u!114 &173563754
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -231,6 +236,11 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &228035656 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1864388333411314711, guid: c97c1f51a62f84bfea766745210e70c3, type: 3}
+  m_PrefabInstance: {fileID: 1860198389}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &249367816
 GameObject:
   m_ObjectHideFlags: 0
@@ -916,8 +926,12 @@ PrefabInstance:
       value: Player
       objectReference: {fileID: 0}
     - target: {fileID: 6407762827548850485, guid: dc72c8f87333040b78cc7c4febf8ff99, type: 3}
+      propertyPath: m_Layer
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 6407762827548850485, guid: dc72c8f87333040b78cc7c4febf8ff99, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6872454535729436960, guid: dc72c8f87333040b78cc7c4febf8ff99, type: 3}
       propertyPath: m_InteractionManager
@@ -1029,6 +1043,32 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 20d2a61042c0e4684acb1f12202f7c17, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RespawnBow
+  respawnAction:
+    m_UseReference: 0
+    m_Action:
+      m_Name: Respawn
+      m_Type: 0
+      m_ExpectedControlType: 
+      m_Id: 27ddbd8d-3929-4cb0-a4ee-ed6863314f41
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings:
+      - m_Name: 
+        m_Id: 78401ba3-431c-43fd-8b14-8754882fea2f
+        m_Path: <XRController>{RightHand}/secondaryButton
+        m_Interactions: 
+        m_Processors: 
+        m_Groups: 
+        m_Action: Respawn
+        m_Flags: 0
+      m_Flags: 0
+    m_Reference: {fileID: 0}
+  respawnPoint: {fileID: 139439298}
+  playerHead: {fileID: 139439298}
+  spawnDistance: 0.6
+  sceneBow: {fileID: 228035656}
+  cooldownSeconds: 2
+  smokePoof: {fileID: 6650199810314842004, guid: 3b7f2c753d435d647a80f1f047a113e3, type: 3}
 --- !u!114 &1138492852
 MonoBehaviour:
   m_ObjectHideFlags: 0

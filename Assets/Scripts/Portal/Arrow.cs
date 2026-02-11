@@ -14,20 +14,23 @@ public class Arrow : MonoBehaviour
     private ParticleSystem _particleSystem;
     private TrailRenderer _trailRenderer;
 
-    private void Awake() {
+    private void Awake()
+    {
         _rigidbody = GetComponent<Rigidbody>();
         _particleSystem = GetComponentInChildren<ParticleSystem>();
         _trailRenderer = GetComponentInChildren<TrailRenderer>();
 
         PullInteraction.pullActionReleased += Release;
         Stop();
-    }   
+    }
 
-    private void OnDestroy() {
+    private void OnDestroy()
+    {
         PullInteraction.pullActionReleased -= Release;
     }
 
-    private void Release(float value) {
+    private void Release(float value)
+    {
         PullInteraction.pullActionReleased -= Release;
         gameObject.transform.parent = null;
         _inAir = true;
@@ -43,26 +46,46 @@ public class Arrow : MonoBehaviour
         _trailRenderer.emitting = true;
     }
 
-    IEnumerator RotateWithVelocity() {
+    IEnumerator RotateWithVelocity()
+    {
         yield return new WaitForFixedUpdate();
-        while (_inAir) {
+        while (_inAir)
+        {
             Quaternion newRotation = Quaternion.LookRotation(_rigidbody.linearVelocity, transform.up);
             transform.rotation = newRotation;
             yield return null;
         }
     }
 
-    void FixedUpdate() {
-        if (_inAir) {
+    void FixedUpdate()
+    {
+        if (_inAir)
+        {
             CheckCollision();
             _lastPosition = tip.position;
         }
     }
 
-    private void CheckCollision() {
-        if (Physics.Linecast(_lastPosition, tip.position, out RaycastHit hit)) {
-            if (hit.transform.gameObject.layer != 8) {
-                if (hit.transform.TryGetComponent(out Rigidbody rb)) {
+    private void CheckCollision()
+    {
+        if (Physics.Linecast(_lastPosition, tip.position, out RaycastHit hit))
+        {
+            if (hit.transform.gameObject.layer != 8)
+            {
+                BaseTarget target = hit.transform.GetComponent<BaseTarget>();
+
+                if (target == null)
+                {
+                    target = hit.transform.GetComponentInParent<BaseTarget>();
+                }
+
+                if (target != null)
+                {
+                    target.HandleArrowHit(this, hit);
+                }
+
+                if (hit.transform.TryGetComponent(out Rigidbody rb))
+                {
                     _rigidbody.interpolation = RigidbodyInterpolation.None;
                     transform.parent = hit.transform;
                     rb.AddForce(_rigidbody.linearVelocity, ForceMode.Impulse);
@@ -72,7 +95,8 @@ public class Arrow : MonoBehaviour
         }
     }
 
-    private void Stop() {
+    private void Stop()
+    {
         _inAir = false;
         SetPhysics(false);
 
@@ -80,7 +104,8 @@ public class Arrow : MonoBehaviour
         _trailRenderer.emitting = false;
     }
 
-    private void SetPhysics(bool enabled) {
+    private void SetPhysics(bool enabled)
+    {
         _rigidbody.isKinematic = !enabled;
         _rigidbody.useGravity = enabled;
     }
