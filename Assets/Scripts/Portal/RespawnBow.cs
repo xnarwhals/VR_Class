@@ -15,6 +15,8 @@ public class RespawnBow : MonoBehaviour
     [SerializeField] private float cooldownSeconds = 5f;
     [SerializeField] private ParticleSystem smokePoof;
 
+    [SerializeField] private AudioSource respawnSound;
+
     private float _nextAllowedTime = 0f;
 
     private void OnEnable()
@@ -71,9 +73,20 @@ public class RespawnBow : MonoBehaviour
 
         if (smokePoof != null)
         {
-            Debug.Log("Playing smoke poof effect at respawn location.");
             smokePoof.transform.SetPositionAndRotation(spawnPos, spawnRot);
-            smokePoof.Play();
+            if (!smokePoof.gameObject.activeInHierarchy)
+            {
+                smokePoof.gameObject.SetActive(true);
+            }
+
+            smokePoof.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            smokePoof.Clear(true);
+            smokePoof.Play(true);
+        }
+
+        if (respawnSound != null)
+        {
+            respawnSound?.Play();
         }
     }
 }

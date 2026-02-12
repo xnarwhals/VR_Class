@@ -42,6 +42,12 @@ public class MetarrowAudioManager : MonoBehaviour
     {
         if (clip == null) return;
 
+        if (mainChannelSource == null)
+        {
+            Debug.LogWarning("MetarrowAudioManager.PlaySound skipped: mainChannelSource is not assigned.");
+            return;
+        }
+
         mainChannelSource.PlayOneShot(clip);
     }
 }

@@ -148,6 +148,8 @@ MonoBehaviour:
   onReset:
     m_PersistentCalls:
       m_Calls: []
+  bullseyeRenderer: {fileID: 6413089208875822765}
+  emissionColorProperty: _EmissionColor
 --- !u!1 &5790822645359819154
 GameObject:
   m_ObjectHideFlags: 0

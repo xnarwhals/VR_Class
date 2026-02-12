@@ -16,12 +16,20 @@ public class BaseTarget : MonoBehaviour
     public UnityEvent onFirstHit;
     public UnityEvent onReset;
 
+    [Header("Bullseye Emission")]
+    [SerializeField] private Renderer bullseyeRenderer;
+    [SerializeField] private string emissionColorProperty = "_EmissionColor";
+
     // cache audio manager
     private MetarrowAudioManager _audioManager;
+    private Material _bullseyeMaterial;
+    private Color _initialEmissionColor = Color.black;
+    private bool _hasEmissionMaterial = false;
 
     private void Awake()
     {
         _audioManager = MetarrowAudioManager.Instance;
+        CacheBullseyeEmission();
     }
 
 
@@ -40,9 +48,10 @@ public class BaseTarget : MonoBehaviour
         bool firstHit = !_hasBeenHit;
         _hasBeenHit = true;
 
+        SetBullseyeEmissionOff();
         OnArrowHit(arrow, hit);
         onHit?.Invoke(arrow);      
-        _audioManager?.PlaySound(arrow.HitSound);
+        PlayHitSound(arrow);
           
         if (firstHit) {
             onFirstHit?.Invoke();
@@ -57,6 +66,7 @@ public class BaseTarget : MonoBehaviour
     {
         _hasBeenHit = false;
         enabled = true;
+        RestoreBullseyeEmission();
         onReset?.Invoke();
     }
 
@@ -69,5 +79,70 @@ public class BaseTarget : MonoBehaviour
     // Override this in derived targets for custom logic.
     protected virtual void OnArrowHit(Arrow arrow, RaycastHit hit) {
         Debug.Log($"{gameObject.name} was hit by an arrow at {hit.point}");
+    }
+
+    private void PlayHitSound(Arrow arrow)
+    {
+        if (arrow == null || arrow.HitSound == null)
+        {
+            return;
+        }
+
+        // Manager can be initialized after this target's Awake, so resolve lazily.
+        if (_audioManager == null)
+        {
+            _audioManager = MetarrowAudioManager.Instance;
+        }
+
+        if (_audioManager != null)
+        {
+            _audioManager.PlaySound(arrow.HitSound);
+        }
+        else
+        {
+            Debug.LogWarning("Hit sound skipped: MetarrowAudioManager.Instance is null.");
+        }
+    }
+
+    private void CacheBullseyeEmission()
+    {
+        if (bullseyeRenderer == null)
+        {
+            return;
+        }
+
+        _bullseyeMaterial = bullseyeRenderer.material;
+        if (_bullseyeMaterial == null || !_bullseyeMaterial.HasProperty(emissionColorProperty))
+        {
+            return;
+        }
+
+        _initialEmissionColor = _bullseyeMaterial.GetColor(emissionColorProperty);
+        _hasEmissionMaterial = true;
+    }
+
+    private void SetBullseyeEmissionOff()
+    {
+        if (!_hasEmissionMaterial)
+        {
+            return;
+        }
+
+        _bullseyeMaterial.SetColor(emissionColorProperty, Color.black);
+        _bullseyeMaterial.DisableKeyword("_EMISSION");
+    }
+
+    private void RestoreBullseyeEmission()
+    {
+        if (!_hasEmissionMaterial)
+        {
+            return;
+        }
+
+        _bullseyeMaterial.SetColor(emissionColorProperty, _initialEmissionColor);
+        if (_initialEmissionColor.maxColorComponent > 0f)
+        {
+            _bullseyeMaterial.EnableKeyword("_EMISSION");
+        }
     }
 }

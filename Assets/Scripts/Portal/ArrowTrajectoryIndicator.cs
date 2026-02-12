@@ -9,9 +9,11 @@ public class ArrowTrajectoryIndicator : MonoBehaviour
 
     [Header("Trajectory")]
     [SerializeField] private float arrowSpeed = 6.0f;
+    [SerializeField] private float fallbackArrowMass = 1.0f;
     [SerializeField] private int segmentCount = 30;
-    [SerializeField] private float timeStep = 0.05f;
+    [SerializeField] private float timeStep = 0f;
     [SerializeField] private LayerMask collisionMask = ~0;
+    [SerializeField] private int ignoredCollisionLayer = 8;
     [SerializeField] private float minPullToShow = 0.05f;
 
     private void Awake()
@@ -54,32 +56,72 @@ public class ArrowTrajectoryIndicator : MonoBehaviour
     {
         lineRenderer.enabled = true;
 
-        Vector3 position = launchPoint.position;
-        Vector3 velocity = launchPoint.forward * (pullAmount * arrowSpeed);
+        ResolveLaunchState(
+            pullAmount,
+            out Vector3 startPosition,
+            out Vector3 initialVelocity);
+
         Vector3 gravity = Physics.gravity;
+        float dt = timeStep > 0f ? timeStep : Time.fixedDeltaTime;
+        dt = Mathf.Max(0.001f, dt);
 
         int writtenPoints = 1;
         lineRenderer.positionCount = segmentCount;
-        lineRenderer.SetPosition(0, position);
+        lineRenderer.SetPosition(0, startPosition);
+
+        Vector3 previousPosition = startPosition;
 
         for (int i = 1; i < segmentCount; i++)
         {
-            Vector3 nextPosition = position + velocity * timeStep + 0.5f * gravity * (timeStep * timeStep);
+            float t = i * dt;
+            Vector3 nextPosition = startPosition + (initialVelocity * t) + (0.5f * gravity * t * t);
 
-            if (Physics.Linecast(position, nextPosition, out RaycastHit hit, collisionMask, QueryTriggerInteraction.Ignore))
+            if (Physics.Linecast(previousPosition, nextPosition, out RaycastHit hit, collisionMask, QueryTriggerInteraction.UseGlobal))
             {
-                lineRenderer.SetPosition(i, hit.point);
-                writtenPoints = i + 1;
-                break;
+                if (hit.transform.gameObject.layer != ignoredCollisionLayer)
+                {
+                    lineRenderer.SetPosition(i, hit.point);
+                    writtenPoints = i + 1;
+                    break;
+                }
             }
 
             lineRenderer.SetPosition(i, nextPosition);
             writtenPoints = i + 1;
-            velocity += gravity * timeStep;
-            position = nextPosition;
+            previousPosition = nextPosition;
         }
 
         lineRenderer.positionCount = writtenPoints;
+    }
+
+    private void ResolveLaunchState(float pullAmount, out Vector3 position, out Vector3 velocity)
+    {
+        position = launchPoint.position;
+        Vector3 direction = launchPoint.forward;
+        float speed = arrowSpeed;
+        float mass = Mathf.Max(0.001f, fallbackArrowMass);
+
+        Arrow notchedArrow = launchPoint.GetComponentInChildren<Arrow>();
+        if (notchedArrow != null)
+        {
+            speed = notchedArrow.speed;
+            direction = notchedArrow.transform.forward;
+
+            if (notchedArrow.tip != null)
+            {
+                position = notchedArrow.tip.position;
+            }
+
+            Rigidbody arrowRb = notchedArrow.GetComponent<Rigidbody>();
+            if (arrowRb != null)
+            {
+                mass = Mathf.Max(0.001f, arrowRb.mass);
+                velocity = arrowRb.linearVelocity + (direction * (pullAmount * speed / mass));
+                return;
+            }
+        }
+
+        velocity = direction * (pullAmount * speed / mass);
     }
 
     private void HideTrajectory(float _)
