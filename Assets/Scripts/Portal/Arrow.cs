@@ -8,6 +8,8 @@ public class Arrow : MonoBehaviour
     public Transform tip;
     [SerializeField] private AudioClip hitSound;
     public AudioClip HitSound => hitSound;
+    public Vector3 LaunchPosition { get; private set; }
+    public bool HasLaunchPosition { get; private set; }
 
     private Rigidbody _rigidbody;
     private bool _inAir = false;
@@ -39,6 +41,9 @@ public class Arrow : MonoBehaviour
         gameObject.transform.parent = null;
         _inAir = true;
         SetPhysics(true);
+
+        LaunchPosition = tip != null ? tip.position : transform.position;
+        HasLaunchPosition = true;
 
         Vector3 force = transform.forward * value * speed;
         _rigidbody.AddForce(force, ForceMode.Impulse);

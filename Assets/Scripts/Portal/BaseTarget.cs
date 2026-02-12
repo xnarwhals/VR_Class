@@ -29,6 +29,10 @@ public class BaseTarget : MonoBehaviour
 
     public void HandleArrowHit(Arrow arrow, RaycastHit hit)
     {
+        if (!CanBeHit(arrow, hit)) {
+            return;
+        }
+
         if (!allowMultipleHits && _hasBeenHit) {
             return;
         }
@@ -54,6 +58,12 @@ public class BaseTarget : MonoBehaviour
         _hasBeenHit = false;
         enabled = true;
         onReset?.Invoke();
+    }
+
+    // Override for custom hit gating rules (distance checks, puzzle state, etc.)
+    protected virtual bool CanBeHit(Arrow arrow, RaycastHit hit)
+    {
+        return enabled;
     }
 
     // Override this in derived targets for custom logic.
