@@ -239,15 +239,10 @@ MonoBehaviour:
   onReset:
     m_PersistentCalls:
       m_Calls: []
-  bullseyeRenderer: {fileID: 96299215}
+  bullseyeRenderer: {fileID: 273335814}
   emissionColorProperty: _EmissionColor
   _endPosition: {fileID: 1223469677}
   speed: 0.6
---- !u!23 &96299215 stripped
-MeshRenderer:
-  m_CorrespondingSourceObject: {fileID: 4338506128576076924, guid: fe77c7d179e699f46984e803981a48ff, type: 3}
-  m_PrefabInstance: {fileID: 96299211}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &115866156
 GameObject:
   m_ObjectHideFlags: 0
@@ -387,15 +382,10 @@ MonoBehaviour:
   onReset:
     m_PersistentCalls:
       m_Calls: []
-  bullseyeRenderer: {fileID: 124701131}
+  bullseyeRenderer: {fileID: 1966599759}
   emissionColorProperty: _EmissionColor
   _endPosition: {fileID: 1752317146}
   speed: 0.4
---- !u!23 &124701131 stripped
-MeshRenderer:
-  m_CorrespondingSourceObject: {fileID: 4338506128576076924, guid: fe77c7d179e699f46984e803981a48ff, type: 3}
-  m_PrefabInstance: {fileID: 124701127}
-  m_PrefabAsset: {fileID: 0}
 --- !u!114 &173563754
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -555,6 +545,11 @@ MonoBehaviour:
   animator: {fileID: 633194419}
   openParameter: isOpen
   doorSound: {fileID: 1701237900}
+--- !u!23 &273335814 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 6413089208875822765, guid: fe77c7d179e699f46984e803981a48ff, type: 3}
+  m_PrefabInstance: {fileID: 96299211}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &277327867
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -12998,6 +12993,11 @@ Canvas:
   m_SortingLayerID: 0
   m_SortingOrder: 0
   m_TargetDisplay: 0
+--- !u!23 &1966599759 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 6413089208875822765, guid: fe77c7d179e699f46984e803981a48ff, type: 3}
+  m_PrefabInstance: {fileID: 124701127}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &2008427462
 GameObject:
   m_ObjectHideFlags: 0
