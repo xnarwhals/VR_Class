@@ -9,6 +9,7 @@ TagManager:
   - LeftHand
   - RightHand
   - GatchaBall
+  - BoomArrow
   layers:
   - Default
   - TransparentFX
