@@ -41,6 +41,7 @@ public class Arrow : MonoBehaviour
         gameObject.transform.parent = null;
         _inAir = true;
         SetPhysics(true);
+        MetarrowGameManager.Instance?.RegisterArrowFired();
 
         LaunchPosition = tip != null ? tip.position : transform.position;
         HasLaunchPosition = true;

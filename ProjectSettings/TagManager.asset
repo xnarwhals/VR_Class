@@ -8,6 +8,7 @@ TagManager:
   - PlayerHand
   - LeftHand
   - RightHand
+  - GatchaBall
   layers:
   - Default
   - TransparentFX
@@ -18,8 +19,8 @@ TagManager:
   - Gun
   - Magazine
   - Player
-  - 
-  - 
+  - Bow
+  - GatchaBall
   - 
   - 
   - 

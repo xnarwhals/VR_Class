@@ -8,8 +8,8 @@ public class ArrowHitEvent : UnityEvent<Arrow> { }
 public class BaseTarget : MonoBehaviour
 {
     [Header("Hit Behavior")]
-    [SerializeField] private bool allowMultipleHits = false;
-    [SerializeField] private bool disableAfterFirstHit = false;
+    [SerializeField] private bool allowMultipleHits = false; // If false, hitting the same target multiple times will only count as 1 unique hit for accuracy and progress. If true, every hit counts for accuracy, but unique target progress only increments on the first hit.
+    [SerializeField] private bool disableAfterFirstHit = false; // Useful for puzzles where the target should only be hit once per round, but can be reset for the next round.
 
     [Header("Events")]
     public ArrowHitEvent onHit;
@@ -26,7 +26,7 @@ public class BaseTarget : MonoBehaviour
     private Color _initialEmissionColor = Color.black;
     private bool _hasEmissionMaterial = false;
 
-    private void Awake()
+    protected virtual void Awake()
     {
         _audioManager = MetarrowAudioManager.Instance;
         CacheBullseyeEmission();
@@ -42,17 +42,21 @@ public class BaseTarget : MonoBehaviour
         }
 
         if (!allowMultipleHits && _hasBeenHit) {
+            // Count as a successful hit for accuracy, but it will not increase
+            // unique target progress in the game manager.
+            MetarrowGameManager.Instance?.RegisterTargetHit(this);
             return;
         }
 
         bool firstHit = !_hasBeenHit;
         _hasBeenHit = true;
+        MetarrowGameManager.Instance?.RegisterTargetHit(this);
 
         SetBullseyeEmissionOff();
         OnArrowHit(arrow, hit);
         onHit?.Invoke(arrow);      
         PlayHitSound(arrow);
-          
+           
         if (firstHit) {
             onFirstHit?.Invoke();
         }
@@ -70,6 +74,21 @@ public class BaseTarget : MonoBehaviour
         onReset?.Invoke();
     }
 
+    public void SetTargetAvailability(bool isActive)
+    {
+        _hasBeenHit = false;
+        enabled = isActive;
+
+        if (isActive)
+        {
+            RestoreBullseyeEmission();
+        }
+        else
+        {
+            SetBullseyeEmissionOff();
+        }
+    }
+
     // Override for custom hit gating rules (distance checks, puzzle state, etc.)
     protected virtual bool CanBeHit(Arrow arrow, RaycastHit hit)
     {
@@ -78,7 +97,7 @@ public class BaseTarget : MonoBehaviour
 
     // Override this in derived targets for custom logic.
     protected virtual void OnArrowHit(Arrow arrow, RaycastHit hit) {
-        Debug.Log($"{gameObject.name} was hit by an arrow at {hit.point}");
+        // Debug.Log($"{gameObject.name} was hit by an arrow at {hit.point}");
     }
 
     private void PlayHitSound(Arrow arrow)
@@ -121,7 +140,7 @@ public class BaseTarget : MonoBehaviour
         _hasEmissionMaterial = true;
     }
 
-    private void SetBullseyeEmissionOff()
+    public void SetBullseyeEmissionOff()
     {
         if (!_hasEmissionMaterial)
         {
@@ -132,7 +151,7 @@ public class BaseTarget : MonoBehaviour
         _bullseyeMaterial.DisableKeyword("_EMISSION");
     }
 
-    private void RestoreBullseyeEmission()
+    public void RestoreBullseyeEmission()
     {
         if (!_hasEmissionMaterial)
         {

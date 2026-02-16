@@ -5,11 +5,12 @@ using UnityEngine.XR.Interaction.Toolkit.Locomotion.Movement;
 public class Sprint : MonoBehaviour
 {
     public float sprintMultiplier = 2f;
-    [SerializeField] private InputActionProperty leftStickClickAction;
+    [SerializeField] private InputActionProperty thumbstickClickAction;
 
     private ContinuousMoveProvider moveProvider;
     private float baseMoveSpeed;
     private bool sprintEnabled;
+    private bool enabledActionLocally;
 
     private void Awake()
     {
@@ -23,8 +24,8 @@ public class Sprint : MonoBehaviour
 
         baseMoveSpeed = moveProvider.moveSpeed;
 
-        if (leftStickClickAction.action != null &&
-            leftStickClickAction.action.type != InputActionType.Button)
+        if (thumbstickClickAction.action != null &&
+            thumbstickClickAction.action.type != InputActionType.Button)
         {
             Debug.LogWarning(
                 "Sprint expects a Button action (bind to <XRController>{LeftHand}/primary2DAxisClick).",
@@ -32,13 +33,50 @@ public class Sprint : MonoBehaviour
         }
     }
 
-    private void Update()
+    private void OnEnable()
     {
-        if (leftStickClickAction.action != null && leftStickClickAction.action.WasPressedThisFrame())
+        if (thumbstickClickAction.action == null)
         {
-            sprintEnabled = !sprintEnabled;
+            return;
         }
 
+        thumbstickClickAction.action.performed += OnThumbstickClicked;
+
+        if (!thumbstickClickAction.action.enabled)
+        {
+            thumbstickClickAction.action.Enable();
+            enabledActionLocally = true;
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (thumbstickClickAction.action != null)
+        {
+            thumbstickClickAction.action.performed -= OnThumbstickClicked;
+
+            if (enabledActionLocally)
+            {
+                thumbstickClickAction.action.Disable();
+                enabledActionLocally = false;
+            }
+        }
+
+        sprintEnabled = false;
+        if (moveProvider != null)
+        {
+            moveProvider.moveSpeed = sprintEnabled ? baseMoveSpeed * sprintMultiplier : baseMoveSpeed;
+        }
+    }
+
+    private void OnThumbstickClicked(InputAction.CallbackContext context)
+    {
+        if (!context.performed)
+        {
+            return;
+        }
+
+        sprintEnabled = !sprintEnabled;
         moveProvider.moveSpeed = sprintEnabled ? baseMoveSpeed * sprintMultiplier : baseMoveSpeed;
     }
 }
