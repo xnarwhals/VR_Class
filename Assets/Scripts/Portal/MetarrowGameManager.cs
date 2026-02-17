@@ -1,21 +1,29 @@
 using UnityEngine;
 using System;
 using System.Collections.Generic;
+using UnityEngine.Events;
 
 public class MetarrowGameManager : MonoBehaviour
 {
     public static MetarrowGameManager Instance { get; private set; }
     public event Action levelCompleted;
+    public UnityEvent onLevelCompleted;
     [SerializeField] private int totalTargets = 11;
     [SerializeField] private int currentLevel = 1;
+    [SerializeField] private bool levelGatchaPuzzleCompleted = false;
 
     private int arrowsFired = 0;
     private int successfulHits = 0;
     private readonly HashSet<BaseTarget> countedTargets = new HashSet<BaseTarget>();
+    private float levelStartTime;
+    private float levelCompletedTime = -1f;
+    private bool hasLevelCompleted;
 
     public int ArrowsFired => arrowsFired;
     public int SuccessfulHits => successfulHits;
     public int UniqueTargetsHit => countedTargets.Count;
+    public bool HasLevelCompleted => hasLevelCompleted;
+    public float ElapsedLevelTime => (hasLevelCompleted ? levelCompletedTime : Time.time) - levelStartTime;
 
     public void TargetHit()
     {
@@ -30,7 +38,7 @@ public class MetarrowGameManager : MonoBehaviour
         successfulHits++;
 
         // Unique target progress only increments once per target instance.
-        if (target != null)
+        if (target != null && target.ContributesToUniqueTargetWinCondition)
         {
             countedTargets.Add(target);
         }
@@ -53,15 +61,23 @@ public class MetarrowGameManager : MonoBehaviour
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
+        levelStartTime = Time.time;
     }
 
     private void EvaluateLevelCompletion()
     {
+        if (hasLevelCompleted)
+        {
+            return;
+        }
 
         bool allTargetsHit = CheckAllTargetsHit();
-        if (allTargetsHit)
+        if (allTargetsHit && levelGatchaPuzzleCompleted)
         {
+            hasLevelCompleted = true;
+            levelCompletedTime = Time.time;
             levelCompleted?.Invoke();
+            onLevelCompleted?.Invoke();
         }
     }
 
@@ -90,5 +106,14 @@ public class MetarrowGameManager : MonoBehaviour
         arrowsFired = 0;
         successfulHits = 0;
         countedTargets.Clear();
+        levelStartTime = Time.time;
+        levelCompletedTime = -1f;
+        hasLevelCompleted = false;
+    }
+
+    public void SetLevelGatchaPuzzleCompleted(bool completed)
+    {
+        levelGatchaPuzzleCompleted = completed;
+        EvaluateLevelCompletion();
     }
 }

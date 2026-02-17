@@ -20,7 +20,7 @@ public class Arrow : MonoBehaviour
 
     
 
-    private void Awake()
+    protected virtual void Awake()
     {
         _rigidbody = GetComponent<Rigidbody>();
         _particleSystem = GetComponentInChildren<ParticleSystem>();
@@ -48,6 +48,7 @@ public class Arrow : MonoBehaviour
 
         Vector3 force = transform.forward * value * speed;
         _rigidbody.AddForce(force, ForceMode.Impulse);
+        OnArrowReleased(value);
 
         StartCoroutine(RotateWithVelocity());
         _lastPosition = tip.position;
@@ -78,9 +79,14 @@ public class Arrow : MonoBehaviour
 
     private void CheckCollision()
     {
-        if (Physics.Linecast(_lastPosition, tip.position, out RaycastHit hit))
+        if (Physics.Linecast(_lastPosition, tip.position, out RaycastHit hit, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
         {
-            if (hit.transform.gameObject.layer != 8)
+            if (hit.transform == null || hit.transform.IsChildOf(transform))
+            {
+                return;
+            }
+
+            if (hit.transform.gameObject.layer != 8) // player
             {
                 BaseTarget target = hit.transform.GetComponent<BaseTarget>();
 
@@ -93,6 +99,8 @@ public class Arrow : MonoBehaviour
                 {
                     target.HandleArrowHit(this, hit);
                 }
+                
+                OnArrowHit(hit, target);
 
                 if (hit.transform.TryGetComponent(out Rigidbody rb))
                 {
@@ -112,8 +120,15 @@ public class Arrow : MonoBehaviour
 
         _particleSystem.Stop();
         _trailRenderer.emitting = false;
+        OnArrowStopped();
         Destroy(gameObject, lifeTime); // heap costly maybe idk
     }
+
+    protected virtual void OnArrowReleased(float pullValue) { }
+
+    protected virtual void OnArrowHit(RaycastHit hit, BaseTarget target) { }
+
+    protected virtual void OnArrowStopped() { }
 
     private void SetPhysics(bool enabled)
     {

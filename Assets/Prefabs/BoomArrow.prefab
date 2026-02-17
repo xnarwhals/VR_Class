@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 2303458956618481589}
   - component: {fileID: 3327314993298426193}
   - component: {fileID: 2633387753556655366}
-  - component: {fileID: 8035645122206612681}
   m_Layer: 0
   m_Name: ArrowModel
   m_TagString: Untagged
@@ -91,27 +90,6 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &8035645122206612681
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1186748315204033547}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 0
-  serializedVersion: 3
-  m_Size: {x: 0.8613098, y: 0.03119274, z: 0.026092445}
-  m_Center: {x: -0.03305478, y: -0.0030700206, z: -0.0028100356}
 --- !u!1 &2431416528623770418
 GameObject:
   m_ObjectHideFlags: 0
@@ -5078,7 +5056,7 @@ GameObject:
   m_Component:
   - component: {fileID: 171118551949791491}
   - component: {fileID: 2748774602365840175}
-  - component: {fileID: 7881651175224859650}
+  - component: {fileID: 5901586563486440495}
   m_Layer: 0
   m_Name: BoomArrow
   m_TagString: BoomArrow
@@ -5131,7 +5109,7 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 2
---- !u!114 &7881651175224859650
+--- !u!114 &5901586563486440495
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -5140,13 +5118,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 3139957530232394735}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b76e99de9201b4a4aa5e19610105c3e4, type: 3}
+  m_Script: {fileID: 11500000, guid: 070dc26b4f864264fa29783f866b0581, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Arrow
+  m_EditorClassIdentifier: Assembly-CSharp::ExplodeArrow
   speed: 5
   lifeTime: 10
   tip: {fileID: 3737585169818429136}
   hitSound: {fileID: 8300000, guid: fca46eddfaf794d58a9ffc8066ce3b13, type: 3}
+  explosionHitSound: {fileID: 8300000, guid: 49c0b2510ef5b524083207557ccac4c3, type: 3}
+  explosionVolumeScale: 1.6
 --- !u!1 &6251383242226380173
 GameObject:
   m_ObjectHideFlags: 0
@@ -5242,6 +5222,14 @@ PrefabInstance:
     - target: {fileID: 919132149155446097, guid: 5390d53b665ee894eb5a7172a0053124, type: 3}
       propertyPath: m_Name
       value: TNT
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 5390d53b665ee894eb5a7172a0053124, type: 3}
+      propertyPath: m_Layer
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 5390d53b665ee894eb5a7172a0053124, type: 3}
+      propertyPath: m_TagString
+      value: BoomArrow
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

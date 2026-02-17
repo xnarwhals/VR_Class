@@ -10,6 +10,9 @@ public class BaseTarget : MonoBehaviour
     [Header("Hit Behavior")]
     [SerializeField] private bool allowMultipleHits = false; // If false, hitting the same target multiple times will only count as 1 unique hit for accuracy and progress. If true, every hit counts for accuracy, but unique target progress only increments on the first hit.
     [SerializeField] private bool disableAfterFirstHit = false; // Useful for puzzles where the target should only be hit once per round, but can be reset for the next round.
+    [SerializeField] private bool contributesToUniqueTargetWinCondition = true;
+
+    public bool ContributesToUniqueTargetWinCondition => contributesToUniqueTargetWinCondition;
 
     [Header("Events")]
     public ArrowHitEvent onHit;

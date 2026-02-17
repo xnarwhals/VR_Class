@@ -40,6 +40,11 @@ public class MetarrowAudioManager : MonoBehaviour
 
     public void PlaySound(AudioClip clip)
     {
+        PlaySound(clip, 1f);
+    }
+
+    public void PlaySound(AudioClip clip, float volumeScale)
+    {
         if (clip == null) return;
 
         if (mainChannelSource == null)
@@ -48,6 +53,6 @@ public class MetarrowAudioManager : MonoBehaviour
             return;
         }
 
-        mainChannelSource.PlayOneShot(clip);
+        mainChannelSource.PlayOneShot(clip, volumeScale);
     }
 }
