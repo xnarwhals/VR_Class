@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class LevelCompleteStatsUI : MonoBehaviour
 {
@@ -7,6 +8,27 @@ public class LevelCompleteStatsUI : MonoBehaviour
     [SerializeField] private TMP_Text timeText;
     [SerializeField] private TMP_Text accuracyText;
     [SerializeField] private TMP_Text hitSummaryText;
+    [SerializeField] private Image rankImage;
+    [Header("Rank Sprites")]
+    [SerializeField] private Sprite rankS;
+    [SerializeField] private Sprite rankA;
+    [SerializeField] private Sprite rankB;
+    [SerializeField] private Sprite rankC;
+    [SerializeField] private Sprite rankF;
+
+    [Header("Grading Weights")]
+    [Range(0f, 1f)][SerializeField] private float accuracyWeight = 0.6f;
+    [Range(0f, 1f)][SerializeField] private float timeWeight = 0.4f;
+
+    [Header("Time Grading (seconds)")]
+    [Min(0.01f)][SerializeField] private float idealTimeSeconds = 180f;
+    [Min(0.02f)][SerializeField] private float failTimeSeconds = 360f;
+
+    [Header("Rank Thresholds (0-100)")]
+    [Range(0f, 100f)][SerializeField] private float sThreshold = 90f;
+    [Range(0f, 100f)][SerializeField] private float aThreshold = 80f;
+    [Range(0f, 100f)][SerializeField] private float bThreshold = 65f;
+    [Range(0f, 100f)][SerializeField] private float cThreshold = 50f;
     [SerializeField] private bool showPanelOnComplete = true;
 
     private MetarrowGameManager _manager;
@@ -94,6 +116,59 @@ public class LevelCompleteStatsUI : MonoBehaviour
         {
             hitSummaryText.text = $"Hits: {_manager.SuccessfulHits}/{_manager.ArrowsFired}  Targets: {_manager.UniqueTargetsHit}";
         }
+
+        UpdateRankImage();
+    }
+
+    private void UpdateRankImage()
+    {
+        if (rankImage == null || _manager == null)
+        {
+            return;
+        }
+
+        float gradeScore = CalculateGradeScore(_manager.ElapsedLevelTime, _manager.GetAccuracyPercent());
+        rankImage.sprite = GetRankSprite(gradeScore);
+    }
+
+    private float CalculateGradeScore(float elapsedSeconds, float accuracyPercent)
+    {
+        float clampedAccuracy = Mathf.Clamp(accuracyPercent, 0f, 100f);
+        float normalizedAccuracyScore = clampedAccuracy;
+
+        float safeIdeal = Mathf.Max(0.01f, idealTimeSeconds);
+        float safeFail = Mathf.Max(safeIdeal + 0.01f, failTimeSeconds);
+        float clampedTime = Mathf.Max(0f, elapsedSeconds);
+
+        // 100 at/under ideal time, 0 at/over fail time.
+        float normalizedTimeScore = 100f;
+        if (clampedTime > safeIdeal)
+        {
+            float t = Mathf.InverseLerp(safeIdeal, safeFail, clampedTime);
+            normalizedTimeScore = Mathf.Lerp(100f, 0f, t);
+        }
+
+        float totalWeight = Mathf.Max(0.0001f, accuracyWeight + timeWeight);
+        float weightedScore =
+            (normalizedAccuracyScore * accuracyWeight) +
+            (normalizedTimeScore * timeWeight);
+
+        return weightedScore / totalWeight;
+    }
+
+    private Sprite GetRankSprite(float score)
+    {
+        // Enforce descending threshold logic even if values are misconfigured in the inspector.
+        float s = sThreshold;
+        float a = Mathf.Min(aThreshold, s);
+        float b = Mathf.Min(bThreshold, a);
+        float c = Mathf.Min(cThreshold, b);
+
+        if (score >= s && rankS != null) return rankS;
+        if (score >= a && rankA != null) return rankA;
+        if (score >= b && rankB != null) return rankB;
+        if (score >= c && rankC != null) return rankC;
+        return rankF;
     }
 
     private static string FormatElapsedTime(float elapsedSeconds)

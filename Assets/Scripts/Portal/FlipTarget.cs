@@ -13,6 +13,7 @@ public class FlipTarget : BaseTarget
     [SerializeField] private float hitPushForce = 3f;
     [SerializeField] private ForceMode hitForceMode = ForceMode.Impulse;
     [SerializeField] private bool resetAngularVelocityOnHit = true;
+    [SerializeField] private bool lockBodyUntilArrowHit = true;
 
     private bool _isTargetEnabled = true;
 
@@ -29,6 +30,18 @@ public class FlipTarget : BaseTarget
         {
             hingeJoint = GetComponent<HingeJoint>();
         }
+
+        if (lockBodyUntilArrowHit && targetBody != null)
+        {
+            targetBody.isKinematic = true;
+        }
+
+        onReset.AddListener(RestoreLockedBodyState);
+    }
+
+    private void OnDestroy()
+    {
+        onReset.RemoveListener(RestoreLockedBodyState);
     }
 
 
@@ -41,6 +54,11 @@ public class FlipTarget : BaseTarget
             return;
         }
 
+        if (lockBodyUntilArrowHit)
+        {
+            targetBody.isKinematic = false;
+        }
+
         if (resetAngularVelocityOnHit)
         {
             targetBody.angularVelocity = Vector3.zero;
@@ -49,5 +67,17 @@ public class FlipTarget : BaseTarget
         // Push from the arrow direction at impact point so the hinged body flips backward.
         Vector3 pushDirection = arrow != null ? arrow.transform.forward : -hit.normal;
         targetBody.AddForceAtPosition(pushDirection * hitPushForce, hit.point, hitForceMode);
+    }
+
+    private void RestoreLockedBodyState()
+    {
+        if (!lockBodyUntilArrowHit || targetBody == null)
+        {
+            return;
+        }
+
+        targetBody.isKinematic = true;
+        targetBody.angularVelocity = Vector3.zero;
+        targetBody.linearVelocity = Vector3.zero;
     }
 }

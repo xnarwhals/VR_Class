@@ -15,6 +15,7 @@ public class MetarrowGameManager : MonoBehaviour
     private int arrowsFired = 0;
     private int successfulHits = 0;
     private readonly HashSet<BaseTarget> countedTargets = new HashSet<BaseTarget>();
+    private int activeLevelTargetCount;
     private float levelStartTime;
     private float levelCompletedTime = -1f;
     private bool hasLevelCompleted;
@@ -22,6 +23,8 @@ public class MetarrowGameManager : MonoBehaviour
     public int ArrowsFired => arrowsFired;
     public int SuccessfulHits => successfulHits;
     public int UniqueTargetsHit => countedTargets.Count;
+    public int CurrentLevel => currentLevel;
+    public int ActiveLevelTargetCount => activeLevelTargetCount;
     public bool HasLevelCompleted => hasLevelCompleted;
     public float ElapsedLevelTime => (hasLevelCompleted ? levelCompletedTime : Time.time) - levelStartTime;
 
@@ -61,6 +64,7 @@ public class MetarrowGameManager : MonoBehaviour
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
+        activeLevelTargetCount = Mathf.Max(0, totalTargets);
         levelStartTime = Time.time;
     }
 
@@ -83,7 +87,7 @@ public class MetarrowGameManager : MonoBehaviour
 
     private bool CheckAllTargetsHit()
     {
-        return countedTargets.Count >= totalTargets;
+        return countedTargets.Count >= activeLevelTargetCount;
     }
 
     public float GetAccuracy()
@@ -103,17 +107,42 @@ public class MetarrowGameManager : MonoBehaviour
 
     public void ResetStats()
     {
-        arrowsFired = 0;
-        successfulHits = 0;
-        countedTargets.Clear();
-        levelStartTime = Time.time;
-        levelCompletedTime = -1f;
-        hasLevelCompleted = false;
+        ResetCurrentLevelStats(resetPerformanceStats: true);
     }
 
     public void SetLevelGatchaPuzzleCompleted(bool completed)
     {
         levelGatchaPuzzleCompleted = completed;
         EvaluateLevelCompletion();
+    }
+
+    public void BeginLevel(int levelIndex, int targetCount, bool resetPerformanceStats = true)
+    {
+        currentLevel = levelIndex;
+        totalTargets = Mathf.Max(0, targetCount); // Kept in sync for inspector/debug visibility.
+        activeLevelTargetCount = totalTargets;
+        ResetCurrentLevelStats(resetPerformanceStats);
+    }
+
+    public void SetActiveLevelTargetCount(int targetCount)
+    {
+        totalTargets = Mathf.Max(0, targetCount); // Kept in sync for inspector/debug visibility.
+        activeLevelTargetCount = totalTargets;
+        EvaluateLevelCompletion();
+    }
+
+    private void ResetCurrentLevelStats(bool resetPerformanceStats)
+    {
+        if (resetPerformanceStats)
+        {
+            arrowsFired = 0;
+            successfulHits = 0;
+        }
+
+        countedTargets.Clear();
+        levelGatchaPuzzleCompleted = false;
+        levelStartTime = Time.time;
+        levelCompletedTime = -1f;
+        hasLevelCompleted = false;
     }
 }

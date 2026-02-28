@@ -1,9 +1,11 @@
 using UnityEngine;
+using UnityEngine.Events;
 
 public class Teleporter : MonoBehaviour
 {
     [SerializeField] private AudioClip teleportSound;
     [SerializeField] private Transform teleportDestination;
+    [SerializeField] private UnityEvent onTeleport;
 
     private void Start()
     {
