@@ -5129,11 +5129,12 @@ MonoBehaviour:
   explosionVolumeScale: 1.7
   enableRocketJump: 1
   playerTransform: {fileID: 0}
-  rocketJumpReceiver: {fileID: 5901586563486440495}
+  rocketJumpReceiver: {fileID: 0}
   playerTag: Player
-  rocketJumpImpulse: 7
+  rocketJumpImpulse: 17
   minHeightBelowPlayer: 0.25
-  maxHorizontalDistance: 3
+  maxHorizontalDistance: 3.5
+  fallbackPlayerHeightOffset: 1
 --- !u!1 &6251383242226380173
 GameObject:
   m_ObjectHideFlags: 0

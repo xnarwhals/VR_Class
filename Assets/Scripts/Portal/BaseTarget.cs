@@ -44,16 +44,18 @@ public class BaseTarget : MonoBehaviour
             return;
         }
 
+        bool countTowardsAccuracy = !HitUsesFractureExplosionEffect(hit);
+
         if (!allowMultipleHits && _hasBeenHit) {
-            // Count as a successful hit for accuracy, but it will not increase
-            // unique target progress in the game manager.
-            MetarrowGameManager.Instance?.RegisterTargetHit(this);
+            // Repeated hits can still notify the manager, but unique target
+            // progress only increments once per target instance.
+            MetarrowGameManager.Instance?.RegisterTargetHit(this, countTowardsAccuracy);
             return;
         }
 
         bool firstHit = !_hasBeenHit;
         _hasBeenHit = true;
-        MetarrowGameManager.Instance?.RegisterTargetHit(this);
+        MetarrowGameManager.Instance?.RegisterTargetHit(this, countTowardsAccuracy);
 
         SetBullseyeEmissionOff();
         OnArrowHit(arrow, hit);
@@ -101,6 +103,21 @@ public class BaseTarget : MonoBehaviour
     // Override this in derived targets for custom logic.
     protected virtual void OnArrowHit(Arrow arrow, RaycastHit hit) {
         // Debug.Log($"{gameObject.name} was hit by an arrow at {hit.point}");
+    }
+
+    private static bool HitUsesFractureExplosionEffect(RaycastHit hit)
+    {
+        if (hit.transform == null)
+        {
+            return false;
+        }
+
+        if (hit.transform.TryGetComponent(out FractureExplosionEffect _))
+        {
+            return true;
+        }
+
+        return hit.transform.GetComponentInParent<FractureExplosionEffect>() != null;
     }
 
     private void PlayHitSound(Arrow arrow)

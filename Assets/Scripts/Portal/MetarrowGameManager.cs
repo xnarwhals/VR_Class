@@ -35,10 +35,13 @@ public class MetarrowGameManager : MonoBehaviour
         EvaluateLevelCompletion();
     }
 
-    public void RegisterTargetHit(BaseTarget target)
+    public void RegisterTargetHit(BaseTarget target, bool countTowardsAccuracy = true)
     {
-        // Every successful target hit affects accuracy.
-        successfulHits++;
+        if (countTowardsAccuracy)
+        {
+            // Every successful target hit affects accuracy unless explicitly excluded.
+            successfulHits++;
+        }
 
         // Unique target progress only increments once per target instance.
         if (target != null && target.ContributesToUniqueTargetWinCondition)
