@@ -1,0 +1,313 @@
+using System.Collections;
+using System;
+using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.AI;
+
+public class BattleCat : MonoBehaviour
+{
+    // Refs
+    private Transform _player;
+    [SerializeField] private Transform modelRoot; // visual model to rotate; keep root physics independent
+    [SerializeField] private LineRenderer lineRenderer; // visual charge up so player can dodge
+    private NavMeshAgent _navMeshAgent; // for movement
+    private BattleCatMovement _movementController;
+    private Rigidbody _rigidbody;
+    private bool _warnedModelRootIsPhysicsRoot;
+
+    // General Settings
+    [SerializeField] private float maxHealth = 100f;
+    [SerializeField] private float normalArrowDamage = 20f;
+    [SerializeField] private float explodeArrowDamage = 25f;
+    [SerializeField] private UnityEvent onCatDied;
+    private float _currentHealth;
+    private bool _isDead;
+    private BattleCatState _currentState;
+
+    // Movement Settings NavMesh
+    public float moveSpeed = 5f;
+
+    // Attack Settings
+    [SerializeField] private Transform bowMuzzle;
+    [SerializeField] private bool autoStartAttacking = true;
+    [SerializeField] private bool facePlayerWhenAggro = true;
+    [SerializeField] private bool moveBeforeEachShot = true;
+    [SerializeField] private float modelYawOffset = 0f; // use if model's forward axis is not +Z
+    public float chargeUpTime = 2f;
+    public float shotInterval = 4f;
+    public float arrowSpeed = 6f;
+    public float arrowLifeTime = 10f;
+    public GameObject projectilePrefab; // arrow shot from bow of cat
+
+    private Coroutine _attackLoopRoutine;
+    private bool _killedByPlayerArrow;
+
+    public event Action<BattleCat, bool> CatDied;
+
+    private void Start()
+    {
+        if (lineRenderer == null)
+        {
+            lineRenderer = GetComponent<LineRenderer>();
+        }
+
+        _navMeshAgent = GetComponent<NavMeshAgent>();
+        _movementController = GetComponent<BattleCatMovement>();
+        _rigidbody = GetComponent<Rigidbody>();
+        _currentHealth = maxHealth;
+        _currentState = BattleCatState.Idle;
+
+        if (modelRoot == null)
+        {
+            modelRoot = transform;
+        }
+
+        if (_navMeshAgent != null)
+        {
+            _navMeshAgent.updateRotation = false;
+        }
+
+        if (lineRenderer != null)
+        {
+            lineRenderer.positionCount = 2;
+            lineRenderer.enabled = false;
+        }
+
+        if (autoStartAttacking)
+        {
+            TryStartAttackLoop();
+        }
+    }
+
+    private void Update()
+    {
+        UpdateAimLine();
+        UpdateFacing();
+    }
+
+    public void Initialize(Transform playerTransform)
+    {
+        _player = playerTransform;
+        TryStartAttackLoop();
+    }
+
+    public void ApplyStats(BattleCatStats stats)
+    {
+        if (stats == null)
+        {
+            return;
+        }
+
+        maxHealth = stats.maxHealth;
+        moveSpeed = stats.moveSpeed;
+        chargeUpTime = stats.chargeUpTime;
+        shotInterval = stats.shotInterval;
+        arrowSpeed = stats.arrowSpeed;
+        arrowLifeTime = stats.arrowLifeTime;
+        normalArrowDamage = stats.normalArrowDamage;
+        explodeArrowDamage = stats.explodeArrowDamage;
+
+        if (!_isDead)
+        {
+            _currentHealth = maxHealth;
+        }
+    }
+
+    public void HandleArrowHit(Arrow arrow, RaycastHit hit)
+    {
+        if (_isDead || arrow == null || arrow.IsLaunchedByAI)
+        {
+            return;
+        }
+
+        float damage = arrow is ExplodeArrow ? explodeArrowDamage : normalArrowDamage;
+        ApplyDamage(damage, true);
+    }
+
+    private void TryStartAttackLoop()
+    {
+        if (_attackLoopRoutine != null)
+        {
+            return;
+        }
+
+        _attackLoopRoutine = StartCoroutine(AttackLoop());
+    }
+
+    private IEnumerator AttackLoop()
+    {
+        while (true)
+        {
+            if (_player == null || projectilePrefab == null || bowMuzzle == null)
+            {
+                yield return null;
+                continue;
+            }
+
+            if (moveBeforeEachShot && _movementController != null)
+            {
+                _currentState = BattleCatState.Moving;
+                yield return _movementController.MoveToRandomPoint(moveSpeed);
+            }
+
+            _currentState = BattleCatState.Charging;
+            yield return new WaitForSeconds(chargeUpTime);
+
+            FireArrowAtPlayer();
+
+            _currentState = BattleCatState.Attacking;
+            yield return new WaitForSeconds(shotInterval);
+
+            _currentState = BattleCatState.Idle;
+        }
+    }
+
+    private void UpdateAimLine()
+    {
+        if (lineRenderer == null || bowMuzzle == null || _player == null)
+        {
+            if (lineRenderer != null)
+            {
+                lineRenderer.enabled = false;
+            }
+
+            return;
+        }
+
+        lineRenderer.enabled = true;
+        lineRenderer.SetPosition(0, bowMuzzle.position);
+        lineRenderer.SetPosition(1, _player.position);
+    }
+
+    private void FireArrowAtPlayer()
+    {
+        if (_player == null || projectilePrefab == null || bowMuzzle == null)
+        {
+            return;
+        }
+
+        Vector3 launchDirection = (_player.position - bowMuzzle.position).normalized;
+        Quaternion launchRotation = Quaternion.LookRotation(launchDirection, Vector3.up);
+
+        GameObject arrowObject = Instantiate(projectilePrefab, bowMuzzle.position, launchRotation);
+
+        if (arrowObject.TryGetComponent(out Arrow arrow))
+        {
+            arrow.LaunchFromAI(launchDirection, arrowSpeed, false);
+        }
+        else if (arrowObject.TryGetComponent(out Rigidbody rb))
+        {
+            rb.isKinematic = false;
+            rb.useGravity = false;
+            rb.linearVelocity = launchDirection * arrowSpeed;
+            Destroy(arrowObject, arrowLifeTime);
+        }
+        else
+        {
+            Destroy(arrowObject, arrowLifeTime);
+        }
+    }
+
+    private void UpdateFacing()
+    {
+        if (!facePlayerWhenAggro)
+        {
+            return;
+        }
+
+        if ((_currentState != BattleCatState.Charging && _currentState != BattleCatState.Attacking) || _player == null)
+        {
+            return;
+        }
+
+        Vector3 lookDirection = _player.position - modelRoot.position;
+        lookDirection.y = 0f;
+
+        if (lookDirection.sqrMagnitude < 0.0001f)
+        {
+            return;
+        }
+
+        Quaternion targetRotation = Quaternion.LookRotation(lookDirection.normalized, Vector3.up) * Quaternion.Euler(0f, modelYawOffset, 0f);
+
+        if (_rigidbody != null && !_rigidbody.isKinematic && modelRoot == transform)
+        {
+            if (!_warnedModelRootIsPhysicsRoot)
+            {
+                Debug.LogWarning("BattleCat modelRoot is set to root while Rigidbody is non-kinematic. Assign a child modelRoot to decouple visual facing from root physics.", this);
+                _warnedModelRootIsPhysicsRoot = true;
+            }
+        }
+
+        modelRoot.rotation = targetRotation;
+    }
+
+    private void ApplyDamage(float damage, bool fromPlayerArrow = false)
+    {
+        if (_isDead)
+        {
+            return;
+        }
+
+        if (fromPlayerArrow)
+        {
+            _killedByPlayerArrow = true;
+        }
+
+        _currentHealth -= damage;
+        if (_currentHealth > 0f)
+        {
+            return;
+        }
+
+        Die();
+    }
+
+    private void Die()
+    {
+        if (_isDead)
+        {
+            return;
+        }
+
+        _isDead = true;
+        _currentHealth = 0f;
+        _currentState = BattleCatState.Idle;
+
+        if (_attackLoopRoutine != null)
+        {
+            StopCoroutine(_attackLoopRoutine);
+            _attackLoopRoutine = null;
+        }
+
+        if (_movementController != null)
+        {
+            _movementController.StopMovement();
+        }
+
+        CatDied?.Invoke(this, _killedByPlayerArrow);
+        onCatDied?.Invoke();
+        Destroy(gameObject);
+    }
+}
+
+public enum BattleCatState
+{
+    Idle,
+    Moving,
+    Charging,
+    Attacking
+}
+
+[System.Serializable]
+public class BattleCatStats
+{
+    public float maxHealth = 100f;
+    public float moveSpeed = 5f;
+    public float chargeUpTime = 2f;
+    public float shotInterval = 4f;
+    public float arrowSpeed = 6f;
+    public float arrowLifeTime = 10f;
+    public float normalArrowDamage = 20f;
+    public float explodeArrowDamage = 25f;
+}

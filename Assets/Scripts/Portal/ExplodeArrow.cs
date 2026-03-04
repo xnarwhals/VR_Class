@@ -2,6 +2,11 @@ using UnityEngine;
 
 public class ExplodeArrow : Arrow
 {
+    [Header("Explosion VFX")]
+    [SerializeField] private bool spawnExplosionVfx = true;
+    [SerializeField] private ExplosionVfxPool explosionVfxPool;
+    [SerializeField] private float explosionVfxNormalOffset = 0.02f;
+
     [SerializeField] private AudioClip explosionHitSound;
     [SerializeField] private float explosionVolumeScale = 1.6f;
 
@@ -18,6 +23,7 @@ public class ExplodeArrow : Arrow
     private IExplosionJumpReceiver _resolvedJumpReceiver;
     private bool _hasWarnedInvalidJumpReceiver;
     private bool _hasWarnedMissingPlayerTag;
+    private bool _hasWarnedMissingVfxPool;
 
     protected override void Awake()
     {
@@ -27,6 +33,7 @@ public class ExplodeArrow : Arrow
 
     protected override void OnArrowHit(RaycastHit hit, BaseTarget target)
     {
+        PlayExplosionVfx(hit);
         PlayExplosionSound();
         TryApplyRocketJump(hit.point);
 
@@ -47,6 +54,37 @@ public class ExplodeArrow : Arrow
                 fracture.CauseFracture();
             }
         }
+    }
+
+    private void PlayExplosionVfx(RaycastHit hit)
+    {
+        if (!spawnExplosionVfx)
+        {
+            return;
+        }
+
+        if (explosionVfxPool == null)
+        {
+            explosionVfxPool = ExplosionVfxPool.Instance;
+        }
+
+        if (explosionVfxPool == null)
+        {
+            if (!_hasWarnedMissingVfxPool)
+            {
+                Debug.LogWarning("ExplodeArrow could not find an ExplosionVfxPool. Add one to the scene and assign an explosion prefab.", this);
+                _hasWarnedMissingVfxPool = true;
+            }
+
+            return;
+        }
+
+        Vector3 spawnPosition = hit.point + hit.normal * explosionVfxNormalOffset;
+        Quaternion spawnRotation = hit.normal.sqrMagnitude > 0.0001f
+            ? Quaternion.LookRotation(hit.normal, Vector3.up)
+            : Quaternion.identity;
+
+        explosionVfxPool.Play(spawnPosition, spawnRotation);
     }
 
     private void TryApplyRocketJump(Vector3 explosionPoint)

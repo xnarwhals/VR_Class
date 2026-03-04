@@ -22,7 +22,7 @@ public class MetarrowAudioManager : MonoBehaviour
 
     private void OnEnable()
     {
-        MetarrowGameManager.Instance.levelCompleted += PlayLevelCompleteSound;
+        // MetarrowGameManager.Instance.levelCompleted += PlayLevelCompleteSound;
     }
 
     private void OnDisable()

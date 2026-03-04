@@ -21,6 +21,9 @@ EditorBuildSettings:
     path: Assets/Scenes/Final/Arrow.unity
     guid: c92a10388c581481881db66cef6a681b
   - enabled: 1
+    path: Assets/Scenes/Final/Menu.unity
+    guid: 8400851d85ff64ca288e5b780772b88b
+  - enabled: 1
     path: Assets/Scenes/Final/MacTesting.unity
     guid: 837cf6bc6fbb54348a02d94d08c61d30
   m_configObjects:

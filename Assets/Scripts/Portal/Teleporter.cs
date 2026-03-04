@@ -21,6 +21,7 @@ public class Teleporter : MonoBehaviour
             Transform playerTransform = other.transform;
             playerTransform.position = teleportDestination.position;
             playerTransform.rotation = teleportDestination.rotation;
+            MetarrowAudioManager.Instance.PlaySound(teleportSound);
         }
     }
 }

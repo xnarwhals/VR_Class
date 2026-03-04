@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.Events;
 
-public class TimedPuzzle : MonoBehaviour
+public class TimedPuzzle : GatchaPuzzle
 {
     [Header("Feedback")]
     [SerializeField] private CounterStepAnimator counterStepAnimator;
@@ -10,13 +10,7 @@ public class TimedPuzzle : MonoBehaviour
     public GameObject LightUpArrowA;
     public GameObject LightUpArrowB;
 
-
-    [SerializeField] private AudioSource audioSource;
-    public AudioClip puzzleCompleteSound;
-    public AudioClip puzzleFailSound;
-
     [Header("Targets")]
-    [SerializeField] private BaseTarget startPuzzleTarget;
     [SerializeField] private BaseTarget[] swapTargets;
 
     [Header("Timing")]
@@ -24,11 +18,6 @@ public class TimedPuzzle : MonoBehaviour
     [SerializeField] private int maxSwaps = 5; // 0 = infinite
     [SerializeField] private int requiredSuccessfulHits = 5; // <= 0 uses maxSwaps
 
-    [Header("Outcome Events")]
-    [SerializeField] private UnityEvent onPuzzleSuccess;
-    [SerializeField] private UnityEvent onPuzzleFailure;
-
-    private bool _puzzleRunning;
     private bool _swapHitListenersRegistered;
     private float _swapTimer;
     private int _activeSwapTargetIndex = -1;
@@ -36,25 +25,9 @@ public class TimedPuzzle : MonoBehaviour
     private int _successfulHitCount;
     private UnityAction[] _swapTargetHitActions;
 
-    private void Start()
-    {
-        if (audioSource == null)
-        {
-            audioSource = GetComponent<AudioSource>();
-        }
-        CacheFeedbackArrows();
-        RegisterSwapTargetHitListeners();
-        InitializeTargets();
-    }
-
-    private void OnDestroy()
-    {
-        UnregisterSwapTargetHitListeners();
-    }
-
     private void Update()
     {
-        if (!_puzzleRunning || swapTargets == null || swapTargets.Length == 0)
+        if (!IsPuzzleRunning || swapTargets == null || swapTargets.Length == 0)
         {
             return;
         }
@@ -67,95 +40,59 @@ public class TimedPuzzle : MonoBehaviour
         }
     }
 
-    // Hook this method to StartPuzzleTarget.onFirstHit in the inspector.
-    public void StartPuzzle()
-    {
-        if (_puzzleRunning)
-        {
-            return;
-        }
-
-        _puzzleRunning = true;
-        _swapTimer = 0f;
-        _swapCount = 0;
-        _successfulHitCount = 0;
-
-        if (startPuzzleTarget != null)
-        {
-            startPuzzleTarget.SetTargetAvailability(false);
-        }
-
-        counterStepAnimator?.ResetCounter();
-        ActivateNextSwapTarget(false);
-    }
-
-    public void StopPuzzle()
-    {
-        _puzzleRunning = false;
-        _activeSwapTargetIndex = -1;
-        _swapCount = 0;
-        _successfulHitCount = 0;
-
-        if (swapTargets == null)
-        {
-            if (startPuzzleTarget != null)
-            {
-                startPuzzleTarget.SetTargetAvailability(true);
-            }
-
-            SetFeedbackArrowsForActiveTarget(-1);
-            return;
-        }
-
-        for (int i = 0; i < swapTargets.Length; i++)
-        {
-            if (swapTargets[i] != null)
-            {
-                swapTargets[i].SetTargetAvailability(false);
-            }
-        }
-
-        if (startPuzzleTarget != null)
-        {
-            startPuzzleTarget.SetTargetAvailability(true);
-        }
-
-        SetFeedbackArrowsForActiveTarget(-1);
-        counterStepAnimator?.ResetCounter();
-    }
-
-    private void InitializeTargets()
+    protected override void InitializePuzzle()
     {
         if (swapIntervalSeconds <= 0f)
         {
             swapIntervalSeconds = 0.1f;
         }
 
+        CacheFeedbackArrows();
+        RegisterSwapTargetHitListeners();
+
         if (counterStepAnimator != null)
         {
             counterStepAnimator.ConfigureTotalSteps(GetRequiredSuccessfulHits());
         }
 
-        if (startPuzzleTarget != null)
-        {
-            startPuzzleTarget.SetTargetAvailability(true);
-        }
-
-        if (swapTargets == null)
-        {
-            return;
-        }
-
-        for (int i = 0; i < swapTargets.Length; i++)
-        {
-            if (swapTargets[i] != null)
-            {
-                swapTargets[i].SetTargetAvailability(false);
-            }
-        }
-
+        base.InitializePuzzle();
+        DeactivateAllSwapTargets();
         SetFeedbackArrowsForActiveTarget(-1);
         counterStepAnimator?.ResetCounter();
+    }
+
+    protected override void CleanupPuzzle()
+    {
+        UnregisterSwapTargetHitListeners();
+    }
+
+    protected override void OnPuzzleStarted()
+    {
+        _swapTimer = 0f;
+        _swapCount = 0;
+        _successfulHitCount = 0;
+        _activeSwapTargetIndex = -1;
+
+        counterStepAnimator?.ResetCounter();
+        ActivateNextSwapTarget(false);
+    }
+
+    protected override void OnPuzzleStopped()
+    {
+        _activeSwapTargetIndex = -1;
+        _swapCount = 0;
+        _successfulHitCount = 0;
+
+        DeactivateAllSwapTargets();
+        SetFeedbackArrowsForActiveTarget(-1);
+        counterStepAnimator?.ResetCounter();
+    }
+
+    protected override void OnPuzzleSucceeded()
+    {
+        _activeSwapTargetIndex = -1;
+        DeactivateAllSwapTargets();
+        SetFeedbackArrowsForActiveTarget(-1);
     }
 
     private void ActivateNextSwapTarget(bool countAsSwap)
@@ -177,6 +114,7 @@ public class TimedPuzzle : MonoBehaviour
 
             target.SetTargetAvailability(i == _activeSwapTargetIndex);
         }
+
         SetFeedbackArrowsForActiveTarget(_activeSwapTargetIndex);
 
         if (countAsSwap)
@@ -185,6 +123,22 @@ public class TimedPuzzle : MonoBehaviour
             if (maxSwaps > 0 && _swapCount >= maxSwaps)
             {
                 FailPuzzle();
+            }
+        }
+    }
+
+    private void DeactivateAllSwapTargets()
+    {
+        if (swapTargets == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < swapTargets.Length; i++)
+        {
+            if (swapTargets[i] != null)
+            {
+                swapTargets[i].SetTargetAvailability(false);
             }
         }
     }
@@ -233,7 +187,7 @@ public class TimedPuzzle : MonoBehaviour
 
     private void OnSwapTargetHit(int targetIndex)
     {
-        if (!_puzzleRunning)
+        if (!IsPuzzleRunning)
         {
             return;
         }
@@ -288,40 +242,11 @@ public class TimedPuzzle : MonoBehaviour
 
     private void FailPuzzle()
     {
-        onPuzzleFailure?.Invoke();
-        Debug.Log("TimedPuzzle failed.");
-        audioSource?.PlayOneShot(puzzleFailSound);
-        StopPuzzle();
+        CompletePuzzleFailure("TimedPuzzle failed.");
     }
 
     private void SucceedPuzzle()
     {
-        _puzzleRunning = false;
-        _activeSwapTargetIndex = -1;
-
-        if (swapTargets != null)
-        {
-            for (int i = 0; i < swapTargets.Length; i++)
-            {
-                if (swapTargets[i] != null)
-                {
-                    swapTargets[i].SetTargetAvailability(false);
-                }
-            }
-        }
-
-        SetFeedbackArrowsForActiveTarget(-1);
-
-        if (startPuzzleTarget != null)
-        {
-            startPuzzleTarget.SetTargetAvailability(false);
-        }
-
-        audioSource?.PlayOneShot(puzzleCompleteSound);
-        onPuzzleSuccess?.Invoke();
-        Debug.Log("TimedPuzzle success.");
+        CompletePuzzleSuccess("TimedPuzzle success.");
     }
 }
-
-
-
