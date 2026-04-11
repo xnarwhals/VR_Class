@@ -90,6 +90,7 @@ public class TimedPuzzle : GatchaPuzzle
 
     protected override void OnPuzzleSucceeded()
     {
+        base.OnPuzzleSucceeded();
         _activeSwapTargetIndex = -1;
         DeactivateAllSwapTargets();
         SetFeedbackArrowsForActiveTarget(-1);

@@ -4,6 +4,13 @@ using UnityEngine.UI;
 
 public class LevelCompleteStatsUI : MonoBehaviour
 {
+    [Header("Level Binding")]
+    [Tooltip("Only show stats when this level index completes.")]
+    [Min(1)][SerializeField] private int targetLevelIndex = 1;
+    [Tooltip("Hide this panel when another level completes.")]
+    [SerializeField] private bool hideWhenNonMatchingLevelCompletes = true;
+
+    [Header("UI References")]
     [SerializeField] private GameObject panelRoot;
     [SerializeField] private TMP_Text timeText;
     [SerializeField] private TMP_Text accuracyText;
@@ -49,9 +56,13 @@ public class LevelCompleteStatsUI : MonoBehaviour
     private void Start()
     {
         TryBindManager();
-        if (_manager != null && _manager.HasLevelCompleted)
+        if (_manager != null && _manager.HasLevelCompleted && IsRelevantLevel())
         {
             ShowCompletedStats();
+        }
+        else if (hideWhenNonMatchingLevelCompletes && panelRoot != null)
+        {
+            panelRoot.SetActive(false);
         }
     }
 
@@ -87,6 +98,15 @@ public class LevelCompleteStatsUI : MonoBehaviour
 
     private void HandleLevelCompleted()
     {
+        if (!IsRelevantLevel())
+        {
+            if (hideWhenNonMatchingLevelCompletes && panelRoot != null)
+            {
+                panelRoot.SetActive(false);
+            }
+            return;
+        }
+
         ShowCompletedStats();
     }
 
@@ -181,5 +201,10 @@ public class LevelCompleteStatsUI : MonoBehaviour
         int minutes = Mathf.FloorToInt(elapsedSeconds / 60f);
         float seconds = elapsedSeconds - (minutes * 60f);
         return $"{minutes:00}:{seconds:00.00}";
+    }
+
+    private bool IsRelevantLevel()
+    {
+        return _manager != null && _manager.CurrentLevel == targetLevelIndex;
     }
 }

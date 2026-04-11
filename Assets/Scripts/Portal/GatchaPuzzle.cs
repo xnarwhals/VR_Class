@@ -75,6 +75,7 @@ public class GatchaPuzzle : MonoBehaviour
 
     protected virtual void OnPuzzleSucceeded()
     {
+        MetarrowGameManager.Instance?.SetLevelGatchaPuzzleCompleted(true);
     }
 
     protected virtual void OnPuzzleFailed()

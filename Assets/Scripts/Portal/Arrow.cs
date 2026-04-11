@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class Arrow : MonoBehaviour
 {
@@ -11,14 +12,20 @@ public class Arrow : MonoBehaviour
     public Vector3 LaunchPosition { get; private set; }
     public bool HasLaunchPosition { get; private set; }
     public bool IsLaunchedByAI { get; private set; }
+    public IReadOnlyList<Vector3> FlightSamples => _flightSamples;
+    public float FlightDuration { get; private set; }
 
     private Rigidbody _rigidbody;
     private bool _inAir = false;
     private Vector3 _lastPosition = Vector3.zero;
     private Coroutine _rotateRoutine;
+    private float _flightStartTime;
 
     private ParticleSystem _particleSystem;
     private TrailRenderer _trailRenderer;
+    private readonly List<Vector3> _flightSamples = new List<Vector3>(64);
+
+    private const int MaxFlightSamples = 256;
 
     
 
@@ -87,6 +94,7 @@ public class Arrow : MonoBehaviour
     {
         if (_inAir)
         {
+            RecordFlightSample(GetTipPosition());
             CheckCollision();
             _lastPosition = GetTipPosition();
         }
@@ -95,24 +103,23 @@ public class Arrow : MonoBehaviour
     private void CheckCollision()
     {
         Vector3 tipPosition = GetTipPosition();
+        QueryTriggerInteraction triggerInteraction = IsLaunchedByAI
+            ? QueryTriggerInteraction.Collide
+            : QueryTriggerInteraction.Ignore;
 
-        if (Physics.Linecast(_lastPosition, tipPosition, out RaycastHit hit, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+        if (Physics.Linecast(_lastPosition, tipPosition, out RaycastHit hit, Physics.DefaultRaycastLayers, triggerInteraction))
         {
             if (hit.transform == null || hit.transform.IsChildOf(transform))
             {
                 return;
             }
 
-            BaseTarget target = hit.transform.GetComponent<BaseTarget>();
-            if (target == null)
-            {
-                target = hit.transform.GetComponentInParent<BaseTarget>();
-            }
+            RecordFlightSample(hit.point);
+            FlightDuration = Mathf.Max(0f, Time.time - _flightStartTime);
 
-            if (target != null)
-            {
-                target.HandleArrowHit(this, hit);
-            }
+            BaseTarget target = null;
+            bool hitBattleCat = false;
+            bool hitPlayer = false;
 
             if (IsLaunchedByAI)
             {
@@ -120,6 +127,7 @@ public class Arrow : MonoBehaviour
                 if (playerHitTracker != null)
                 {
                     playerHitTracker.RegisterArrowHit(this, hit);
+                    hitPlayer = true;
                 }
             }
             else
@@ -128,10 +136,33 @@ public class Arrow : MonoBehaviour
                 if (battleCat != null)
                 {
                     battleCat.HandleArrowHit(this, hit);
+                    hitBattleCat = true;
+                }
+            }
+
+            // Cat hits should not contribute to accuracy, so skip BaseTarget handling for cats.
+            if (!hitBattleCat)
+            {
+                target = hit.transform.GetComponent<BaseTarget>();
+                if (target == null)
+                {
+                    target = hit.transform.GetComponentInParent<BaseTarget>();
+                }
+
+                if (target != null)
+                {
+                    target.HandleArrowHit(this, hit);
                 }
             }
 
             OnArrowHit(hit, target);
+
+            // Cat-hit and player-hit arrows should disappear right after applying damage/effects.
+            if (hitBattleCat || hitPlayer)
+            {
+                Destroy(gameObject);
+                return;
+            }
 
             if (hit.transform.TryGetComponent(out Rigidbody rb))
             {
@@ -147,6 +178,11 @@ public class Arrow : MonoBehaviour
     private void Stop()
     {
         _inAir = false;
+        if (FlightDuration <= 0f && HasLaunchPosition)
+        {
+            FlightDuration = Mathf.Max(0f, Time.time - _flightStartTime);
+        }
+
         SetPhysics(false);
 
         if (_rotateRoutine != null)
@@ -185,6 +221,10 @@ public class Arrow : MonoBehaviour
     {
         _inAir = true;
         SetPhysics(true);
+        FlightDuration = 0f;
+        _flightStartTime = Time.time;
+        _flightSamples.Clear();
+        RecordFlightSample(GetTipPosition());
 
         if (_rotateRoutine != null)
         {
@@ -203,6 +243,25 @@ public class Arrow : MonoBehaviour
         {
             _trailRenderer.emitting = true;
         }
+    }
+
+    private void RecordFlightSample(Vector3 samplePoint)
+    {
+        if (_flightSamples.Count > 0)
+        {
+            Vector3 lastSample = _flightSamples[_flightSamples.Count - 1];
+            if ((samplePoint - lastSample).sqrMagnitude <= 0.000001f)
+            {
+                return;
+            }
+        }
+
+        if (_flightSamples.Count >= MaxFlightSamples)
+        {
+            return;
+        }
+
+        _flightSamples.Add(samplePoint);
     }
 
     private Vector3 GetTipPosition()

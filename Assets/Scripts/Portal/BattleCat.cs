@@ -9,11 +9,11 @@ public class BattleCat : MonoBehaviour
     // Refs
     private Transform _player;
     [SerializeField] private Transform modelRoot; // visual model to rotate; keep root physics independent
-    [SerializeField] private LineRenderer lineRenderer; // visual charge up so player can dodge
     private NavMeshAgent _navMeshAgent; // for movement
     private BattleCatMovement _movementController;
     private Rigidbody _rigidbody;
     private bool _warnedModelRootIsPhysicsRoot;
+    private AudioSource _audioSource;
 
     // General Settings
     [SerializeField] private float maxHealth = 100f;
@@ -33,11 +33,17 @@ public class BattleCat : MonoBehaviour
     [SerializeField] private bool facePlayerWhenAggro = true;
     [SerializeField] private bool moveBeforeEachShot = true;
     [SerializeField] private float modelYawOffset = 0f; // use if model's forward axis is not +Z
+    [SerializeField] private float playerAimYOffset = 1.2f;
     public float chargeUpTime = 2f;
     public float shotInterval = 4f;
     public float arrowSpeed = 6f;
     public float arrowLifeTime = 10f;
     public GameObject projectilePrefab; // arrow shot from bow of cat
+    [Header("Arrow Telegraph")]
+    [SerializeField] private bool enhanceArrowTrail = true;
+    [SerializeField] private float enemyArrowTrailTime = 0.9f;
+    [SerializeField] private float enemyArrowTrailWidthMultiplier = 1.35f;
+    [SerializeField] private Gradient enemyArrowTrailColor;
 
     private Coroutine _attackLoopRoutine;
     private bool _killedByPlayerArrow;
@@ -46,9 +52,9 @@ public class BattleCat : MonoBehaviour
 
     private void Start()
     {
-        if (lineRenderer == null)
+        if (_audioSource == null)
         {
-            lineRenderer = GetComponent<LineRenderer>();
+            _audioSource = GetComponent<AudioSource>();
         }
 
         _navMeshAgent = GetComponent<NavMeshAgent>();
@@ -67,12 +73,6 @@ public class BattleCat : MonoBehaviour
             _navMeshAgent.updateRotation = false;
         }
 
-        if (lineRenderer != null)
-        {
-            lineRenderer.positionCount = 2;
-            lineRenderer.enabled = false;
-        }
-
         if (autoStartAttacking)
         {
             TryStartAttackLoop();
@@ -81,7 +81,6 @@ public class BattleCat : MonoBehaviour
 
     private void Update()
     {
-        UpdateAimLine();
         UpdateFacing();
     }
 
@@ -121,6 +120,7 @@ public class BattleCat : MonoBehaviour
         }
 
         float damage = arrow is ExplodeArrow ? explodeArrowDamage : normalArrowDamage;
+        _audioSource?.Play();
         ApplyDamage(damage, true);
     }
 
@@ -162,23 +162,6 @@ public class BattleCat : MonoBehaviour
         }
     }
 
-    private void UpdateAimLine()
-    {
-        if (lineRenderer == null || bowMuzzle == null || _player == null)
-        {
-            if (lineRenderer != null)
-            {
-                lineRenderer.enabled = false;
-            }
-
-            return;
-        }
-
-        lineRenderer.enabled = true;
-        lineRenderer.SetPosition(0, bowMuzzle.position);
-        lineRenderer.SetPosition(1, _player.position);
-    }
-
     private void FireArrowAtPlayer()
     {
         if (_player == null || projectilePrefab == null || bowMuzzle == null)
@@ -186,10 +169,12 @@ public class BattleCat : MonoBehaviour
             return;
         }
 
-        Vector3 launchDirection = (_player.position - bowMuzzle.position).normalized;
+        Vector3 playerAimPosition = _player.position + Vector3.up * playerAimYOffset;
+        Vector3 launchDirection = (playerAimPosition - bowMuzzle.position).normalized;
         Quaternion launchRotation = Quaternion.LookRotation(launchDirection, Vector3.up);
 
         GameObject arrowObject = Instantiate(projectilePrefab, bowMuzzle.position, launchRotation);
+        ConfigureEnemyArrowTrail(arrowObject);
 
         if (arrowObject.TryGetComponent(out Arrow arrow))
         {
@@ -206,6 +191,31 @@ public class BattleCat : MonoBehaviour
         {
             Destroy(arrowObject, arrowLifeTime);
         }
+    }
+
+    private void ConfigureEnemyArrowTrail(GameObject arrowObject)
+    {
+        if (!enhanceArrowTrail || arrowObject == null)
+        {
+            return;
+        }
+
+        TrailRenderer trail = arrowObject.GetComponentInChildren<TrailRenderer>(true);
+        if (trail == null)
+        {
+            return;
+        }
+
+        trail.Clear();
+        trail.time = Mathf.Max(0.05f, enemyArrowTrailTime);
+        trail.widthMultiplier = Mathf.Max(0.01f, trail.widthMultiplier * enemyArrowTrailWidthMultiplier);
+
+        if (enemyArrowTrailColor != null && enemyArrowTrailColor.colorKeys != null && enemyArrowTrailColor.colorKeys.Length > 0)
+        {
+            trail.colorGradient = enemyArrowTrailColor;
+        }
+
+        trail.emitting = true;
     }
 
     private void UpdateFacing()

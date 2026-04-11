@@ -201,4 +201,5 @@ public class CombatPuzzle : GatchaPuzzle
 
         CompletePuzzleSuccess("CombatPuzzle success: both cats were defeated by player arrows.");
     }
+
 }

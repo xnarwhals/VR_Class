@@ -32,18 +32,6 @@ public class ExplosionVfxPool : MonoBehaviour
         }
     }
 
-    public void Play(Vector3 position, Quaternion rotation)
-    {
-        PooledExplosionVfx pooled = GetNext();
-        if (pooled == null)
-        {
-            return;
-        }
-
-        _inUse.Add(pooled);
-        pooled.Play(position, rotation);
-    }
-
     internal void Release(PooledExplosionVfx pooled)
     {
         if (pooled == null || !_inUse.Remove(pooled))
@@ -65,7 +53,11 @@ public class ExplosionVfxPool : MonoBehaviour
 
         for (int i = 0; i < initialSize; i++)
         {
-            CreateNewInstance();
+            PooledExplosionVfx pooled = CreateNewInstance();
+            if (pooled != null)
+            {
+                _available.Enqueue(pooled);
+            }
         }
     }
 
@@ -101,7 +93,19 @@ public class ExplosionVfxPool : MonoBehaviour
 
         pooled.Initialize(this, instance);
         instanceObject.SetActive(false);
-        _available.Enqueue(pooled);
         return pooled;
+    }
+
+    public void Play(Vector3 position, Quaternion rotation)
+    {
+        PooledExplosionVfx pooled = GetNext();
+        if (pooled == null)
+        {
+            return;
+        }
+
+        _inUse.Add(pooled);
+        pooled.gameObject.SetActive(true);
+        pooled.Play(position, rotation);
     }
 }

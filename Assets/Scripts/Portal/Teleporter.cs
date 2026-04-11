@@ -3,9 +3,16 @@ using UnityEngine.Events;
 
 public class Teleporter : MonoBehaviour
 {
+    [Header("Access Control")]
+    [SerializeField] private bool requireLevelCompletion = true;
+    [SerializeField] private bool stayUnlockedOnceUsed = true;
+
+    [Header("Teleport Settings")]
     [SerializeField] private AudioClip teleportSound;
     [SerializeField] private Transform teleportDestination;
     [SerializeField] private UnityEvent onTeleport;
+
+    private bool _isPermanentlyUnlocked;
 
     private void Start()
     {
@@ -14,14 +21,49 @@ public class Teleporter : MonoBehaviour
             Debug.LogError("Teleport destination is not assigned.", this);
         }
     }
+
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player"))
+        if (!other.CompareTag("Player"))
         {
-            Transform playerTransform = other.transform;
-            playerTransform.position = teleportDestination.position;
-            playerTransform.rotation = teleportDestination.rotation;
-            MetarrowAudioManager.Instance.PlaySound(teleportSound);
+            return;
         }
+
+        if (!CanUseTeleporter())
+        {
+            return;
+        }
+
+        Transform playerTransform = other.transform;
+        playerTransform.position = teleportDestination.position;
+        playerTransform.rotation = teleportDestination.rotation;
+        MetarrowAudioManager.Instance?.PlaySound(teleportSound);
+        onTeleport?.Invoke();
+    }
+
+    private bool CanUseTeleporter()
+    {
+        if (!requireLevelCompletion)
+        {
+            return true;
+        }
+
+        if (_isPermanentlyUnlocked)
+        {
+            return true;
+        }
+
+        MetarrowGameManager manager = MetarrowGameManager.Instance;
+        if (manager == null || !manager.HasLevelCompleted)
+        {
+            return false;
+        }
+
+        if (stayUnlockedOnceUsed)
+        {
+            _isPermanentlyUnlocked = true;
+        }
+
+        return true;
     }
 }
