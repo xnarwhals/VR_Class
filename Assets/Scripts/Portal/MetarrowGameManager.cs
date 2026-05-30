@@ -194,8 +194,7 @@ public class MetarrowGameManager : MonoBehaviour
             }
         }
 
-        Scene activeScene = SceneManager.GetActiveScene();
-        SceneManager.LoadScene(activeScene.buildIndex, LoadSceneMode.Single);
+        SceneManager.LoadScene(0, LoadSceneMode.Single);
     }
 
     // ----- Scoring / completion -----
